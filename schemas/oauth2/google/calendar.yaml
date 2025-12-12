@@ -1,0 +1,386 @@
+openapi: "3.1.0"
+info:
+  title: Google Calendar API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for Google Calendar API.
+    
+    ## Required Placeholders
+    - `{{CLIENT_ID}}`: Your Google OAuth client ID
+    - `{{CLIENT_SECRET}}`: Your Google OAuth client secret
+    - `{{CALLBACK_URL}}`: Your platform's OAuth callback URL
+    
+    ## Scopes
+    - `https://www.googleapis.com/auth/calendar` - Full calendar access
+    - `https://www.googleapis.com/auth/calendar.events` - Events only
+    - `https://www.googleapis.com/auth/calendar.readonly` - Read only
+    
+    ## Auth Type
+    OAuth2 Authorization Code
+    
+    ## ChatGPT Compatible
+    Yes
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+
+servers:
+  - url: https://www.googleapis.com/calendar/v3
+    description: Google Calendar API v3
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://accounts.google.com/o/oauth2/v2/auth
+          tokenUrl: https://oauth2.googleapis.com/token
+          scopes:
+            https://www.googleapis.com/auth/calendar: Full access to calendars
+            https://www.googleapis.com/auth/calendar.events: Manage events
+            https://www.googleapis.com/auth/calendar.readonly: Read-only access
+
+  schemas:
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique event identifier
+        summary:
+          type: string
+          description: Event title
+        description:
+          type: string
+          description: Event description
+        location:
+          type: string
+          description: Event location
+        start:
+          type: object
+          properties:
+            dateTime:
+              type: string
+              format: date-time
+            date:
+              type: string
+              format: date
+            timeZone:
+              type: string
+        end:
+          type: object
+          properties:
+            dateTime:
+              type: string
+              format: date-time
+            date:
+              type: string
+              format: date
+            timeZone:
+              type: string
+        attendees:
+          type: array
+          items:
+            type: object
+            properties:
+              email:
+                type: string
+              displayName:
+                type: string
+              responseStatus:
+                type: string
+                enum: [needsAction, declined, tentative, accepted]
+        status:
+          type: string
+          enum: [confirmed, tentative, cancelled]
+        created:
+          type: string
+          format: date-time
+        updated:
+          type: string
+          format: date-time
+
+    EventList:
+      type: object
+      properties:
+        kind:
+          type: string
+        summary:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
+        nextPageToken:
+          type: string
+
+    Calendar:
+      type: object
+      properties:
+        id:
+          type: string
+        summary:
+          type: string
+        description:
+          type: string
+        timeZone:
+          type: string
+        primary:
+          type: boolean
+
+    CalendarList:
+      type: object
+      properties:
+        kind:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Calendar'
+        nextPageToken:
+          type: string
+
+security:
+  - OAuth2:
+      - https://www.googleapis.com/auth/calendar
+
+paths:
+  /users/me/calendarList:
+    get:
+      operationId: listUserCalendars
+      summary: List all calendars
+      description: Returns all calendars the user has access to
+      responses:
+        '200':
+          description: List of calendars
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarList'
+        '401':
+          description: Unauthorized - token invalid or expired
+
+  /calendars/{calendarId}/events:
+    get:
+      operationId: listCalendarEvents
+      summary: List events on a calendar
+      description: Returns events from the specified calendar
+      parameters:
+        - name: calendarId
+          in: path
+          required: true
+          description: Calendar identifier. Use "primary" for main calendar
+          schema:
+            type: string
+            default: primary
+        - name: timeMin
+          in: query
+          description: Lower bound for event start time (RFC3339)
+          schema:
+            type: string
+            format: date-time
+        - name: timeMax
+          in: query
+          description: Upper bound for event start time (RFC3339)
+          schema:
+            type: string
+            format: date-time
+        - name: maxResults
+          in: query
+          description: Maximum number of events to return
+          schema:
+            type: integer
+            default: 10
+            maximum: 2500
+        - name: singleEvents
+          in: query
+          description: Expand recurring events into instances
+          schema:
+            type: boolean
+            default: true
+        - name: orderBy
+          in: query
+          description: Order of events returned
+          schema:
+            type: string
+            enum: [startTime, updated]
+            default: startTime
+        - name: q
+          in: query
+          description: Free text search terms
+          schema:
+            type: string
+        - name: pageToken
+          in: query
+          description: Token for pagination
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventList'
+
+    post:
+      operationId: createCalendarEvent
+      summary: Create a new event
+      description: Creates an event on the specified calendar
+      parameters:
+        - name: calendarId
+          in: path
+          required: true
+          description: Calendar identifier. Use "primary" for main calendar
+          schema:
+            type: string
+            default: primary
+        - name: sendUpdates
+          in: query
+          description: Whether to send notifications
+          schema:
+            type: string
+            enum: [all, externalOnly, none]
+            default: none
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - summary
+                - start
+                - end
+              properties:
+                summary:
+                  type: string
+                  description: Event title
+                description:
+                  type: string
+                  description: Event description
+                location:
+                  type: string
+                  description: Event location
+                start:
+                  type: object
+                  required:
+                    - dateTime
+                  properties:
+                    dateTime:
+                      type: string
+                      format: date-time
+                      description: Start time (RFC3339)
+                    timeZone:
+                      type: string
+                      description: Timezone (e.g., America/New_York)
+                end:
+                  type: object
+                  required:
+                    - dateTime
+                  properties:
+                    dateTime:
+                      type: string
+                      format: date-time
+                      description: End time (RFC3339)
+                    timeZone:
+                      type: string
+                attendees:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+      responses:
+        '200':
+          description: Created event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+
+  /calendars/{calendarId}/events/{eventId}:
+    get:
+      operationId: getCalendarEvent
+      summary: Get a specific event
+      description: Returns a single event by ID
+      parameters:
+        - name: calendarId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+
+    put:
+      operationId: updateCalendarEvent
+      summary: Update an event
+      description: Updates an existing event
+      parameters:
+        - name: calendarId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sendUpdates
+          in: query
+          schema:
+            type: string
+            enum: [all, externalOnly, none]
+            default: none
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Event'
+      responses:
+        '200':
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+
+    delete:
+      operationId: deleteCalendarEvent
+      summary: Delete an event
+      description: Deletes an event from the calendar
+      parameters:
+        - name: calendarId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sendUpdates
+          in: query
+          schema:
+            type: string
+            enum: [all, externalOnly, none]
+            default: none
+      responses:
+        '204':
+          description: Event deleted successfully
