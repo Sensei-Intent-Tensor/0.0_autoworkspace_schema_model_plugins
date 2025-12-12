@@ -1,0 +1,317 @@
+openapi: "3.1.0"
+info:
+  title: Open-Meteo Weather API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for Open-Meteo Weather API.
+    
+    ## No Authentication Required
+    This is a free, open API. No API keys or OAuth needed.
+    
+    ## Rate Limits
+    - 10,000 requests per day (per IP)
+    - Non-commercial use: Free
+    - Commercial use: See open-meteo.com/en/pricing
+    
+    ## Auth Type
+    Keyless (none)
+    
+    ## ChatGPT Compatible
+    Yes
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+  externalDocs:
+    url: https://open-meteo.com/en/docs
+
+servers:
+  - url: https://api.open-meteo.com/v1
+    description: Open-Meteo API
+
+paths:
+  /forecast:
+    get:
+      operationId: getWeatherForecast
+      summary: Get weather forecast
+      description: |
+        Returns weather forecast for given coordinates.
+        Supports current weather, hourly forecasts, and daily forecasts.
+      security: []  # No auth required
+      parameters:
+        - name: latitude
+          in: query
+          required: true
+          description: Latitude (WGS84)
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+          example: 52.52
+        - name: longitude
+          in: query
+          required: true
+          description: Longitude (WGS84)
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+          example: 13.41
+        - name: current_weather
+          in: query
+          description: Include current weather conditions
+          schema:
+            type: boolean
+            default: false
+        - name: temperature_unit
+          in: query
+          description: Temperature unit
+          schema:
+            type: string
+            enum: [celsius, fahrenheit]
+            default: celsius
+        - name: windspeed_unit
+          in: query
+          description: Wind speed unit
+          schema:
+            type: string
+            enum: [kmh, ms, mph, kn]
+            default: kmh
+        - name: precipitation_unit
+          in: query
+          description: Precipitation unit
+          schema:
+            type: string
+            enum: [mm, inch]
+            default: mm
+        - name: timezone
+          in: query
+          description: Timezone for time values
+          schema:
+            type: string
+            default: auto
+          example: America/New_York
+        - name: forecast_days
+          in: query
+          description: Number of forecast days (1-16)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 16
+            default: 7
+        - name: hourly
+          in: query
+          description: |
+            Hourly weather variables to include.
+            Comma-separated list.
+          schema:
+            type: string
+          example: temperature_2m,precipitation,weathercode
+        - name: daily
+          in: query
+          description: |
+            Daily weather variables to include.
+            Comma-separated list.
+          schema:
+            type: string
+          example: temperature_2m_max,temperature_2m_min,precipitation_sum
+      responses:
+        '200':
+          description: Weather forecast data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  latitude:
+                    type: number
+                  longitude:
+                    type: number
+                  generationtime_ms:
+                    type: number
+                  utc_offset_seconds:
+                    type: integer
+                  timezone:
+                    type: string
+                  timezone_abbreviation:
+                    type: string
+                  elevation:
+                    type: number
+                  current_weather:
+                    type: object
+                    properties:
+                      time:
+                        type: string
+                      temperature:
+                        type: number
+                      weathercode:
+                        type: integer
+                      windspeed:
+                        type: number
+                      winddirection:
+                        type: number
+                      is_day:
+                        type: integer
+                  hourly:
+                    type: object
+                    properties:
+                      time:
+                        type: array
+                        items:
+                          type: string
+                      temperature_2m:
+                        type: array
+                        items:
+                          type: number
+                  daily:
+                    type: object
+                    properties:
+                      time:
+                        type: array
+                        items:
+                          type: string
+                      temperature_2m_max:
+                        type: array
+                        items:
+                          type: number
+                      temperature_2m_min:
+                        type: array
+                        items:
+                          type: number
+
+  /geocoding/v1/search:
+    get:
+      operationId: geocodeLocation
+      summary: Search for locations
+      description: |
+        Search for cities and places by name.
+        Returns coordinates for weather API.
+      security: []
+      servers:
+        - url: https://geocoding-api.open-meteo.com
+      parameters:
+        - name: name
+          in: query
+          required: true
+          description: Location name to search
+          schema:
+            type: string
+          example: Berlin
+        - name: count
+          in: query
+          description: Number of results
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+        - name: language
+          in: query
+          description: Language for results
+          schema:
+            type: string
+            default: en
+        - name: format
+          in: query
+          description: Response format
+          schema:
+            type: string
+            enum: [json, protobuf]
+            default: json
+      responses:
+        '200':
+          description: Location search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        latitude:
+                          type: number
+                        longitude:
+                          type: number
+                        elevation:
+                          type: number
+                        country:
+                          type: string
+                        country_code:
+                          type: string
+                        admin1:
+                          type: string
+                          description: State/province
+                        admin2:
+                          type: string
+                          description: County/district
+                        timezone:
+                          type: string
+                        population:
+                          type: integer
+
+  /air-quality:
+    get:
+      operationId: getAirQuality
+      summary: Get air quality data
+      description: Returns air quality forecast for given coordinates
+      security: []
+      parameters:
+        - name: latitude
+          in: query
+          required: true
+          schema:
+            type: number
+          example: 52.52
+        - name: longitude
+          in: query
+          required: true
+          schema:
+            type: number
+          example: 13.41
+        - name: hourly
+          in: query
+          description: Hourly air quality variables
+          schema:
+            type: string
+          example: pm10,pm2_5,us_aqi
+        - name: timezone
+          in: query
+          schema:
+            type: string
+            default: auto
+      responses:
+        '200':
+          description: Air quality data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  latitude:
+                    type: number
+                  longitude:
+                    type: number
+                  hourly:
+                    type: object
+                    properties:
+                      time:
+                        type: array
+                        items:
+                          type: string
+                      pm10:
+                        type: array
+                        items:
+                          type: number
+                      pm2_5:
+                        type: array
+                        items:
+                          type: number
+                      us_aqi:
+                        type: array
+                        items:
+                          type: integer
