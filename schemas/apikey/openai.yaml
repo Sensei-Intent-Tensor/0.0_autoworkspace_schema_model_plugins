@@ -1,0 +1,786 @@
+openapi: "3.1.0"
+info:
+  title: OpenAI API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for OpenAI API.
+    
+    ## Required Placeholders
+    - `{{OPENAI_API_KEY}}`: Your OpenAI API key (starts with `sk-`)
+    
+    ## Auth Type
+    API Key (Bearer token in Authorization header)
+    
+    ## ChatGPT Compatible
+    Yes (ironic, but yes - ChatGPT can call OpenAI API)
+    
+    ## Rate Limits
+    Vary by model and tier. See https://platform.openai.com/docs/guides/rate-limits
+    
+    ## Models
+    - `gpt-4o` - Latest multimodal flagship
+    - `gpt-4o-mini` - Fast and affordable
+    - `gpt-4-turbo` - Previous generation
+    - `gpt-3.5-turbo` - Fast, legacy
+    - `text-embedding-3-small` - Embeddings
+    - `text-embedding-3-large` - High-dimension embeddings
+    - `dall-e-3` - Image generation
+    - `whisper-1` - Speech to text
+    - `tts-1` / `tts-1-hd` - Text to speech
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+
+servers:
+  - url: https://api.openai.com/v1
+    description: OpenAI API v1
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Use your OpenAI API key as the bearer token.
+        Header format: `Authorization: Bearer {{OPENAI_API_KEY}}`
+
+  schemas:
+    ChatCompletionRequest:
+      type: object
+      required:
+        - model
+        - messages
+      properties:
+        model:
+          type: string
+          description: Model ID to use
+          enum:
+            - gpt-4o
+            - gpt-4o-mini
+            - gpt-4-turbo
+            - gpt-4
+            - gpt-3.5-turbo
+        messages:
+          type: array
+          description: Conversation messages
+          items:
+            type: object
+            required:
+              - role
+              - content
+            properties:
+              role:
+                type: string
+                enum: [system, user, assistant, tool]
+              content:
+                oneOf:
+                  - type: string
+                  - type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          enum: [text, image_url]
+                        text:
+                          type: string
+                        image_url:
+                          type: object
+                          properties:
+                            url:
+                              type: string
+                            detail:
+                              type: string
+                              enum: [low, high, auto]
+              name:
+                type: string
+              tool_call_id:
+                type: string
+              tool_calls:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    type:
+                      type: string
+                    function:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        arguments:
+                          type: string
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+          default: 1
+          description: Sampling temperature (0-2)
+        top_p:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 1
+          description: Nucleus sampling
+        n:
+          type: integer
+          minimum: 1
+          default: 1
+          description: Number of completions to generate
+        stream:
+          type: boolean
+          default: false
+          description: Stream partial responses
+        stop:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+          description: Stop sequences
+        max_tokens:
+          type: integer
+          description: Maximum tokens to generate
+        presence_penalty:
+          type: number
+          minimum: -2
+          maximum: 2
+          default: 0
+        frequency_penalty:
+          type: number
+          minimum: -2
+          maximum: 2
+          default: 0
+        logit_bias:
+          type: object
+          additionalProperties:
+            type: number
+        user:
+          type: string
+          description: Unique user identifier
+        tools:
+          type: array
+          description: Tools the model can call
+          items:
+            type: object
+            required:
+              - type
+              - function
+            properties:
+              type:
+                type: string
+                enum: [function]
+              function:
+                type: object
+                required:
+                  - name
+                properties:
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  parameters:
+                    type: object
+        tool_choice:
+          oneOf:
+            - type: string
+              enum: [none, auto, required]
+            - type: object
+              properties:
+                type:
+                  type: string
+                function:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+        response_format:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [text, json_object]
+        seed:
+          type: integer
+          description: Seed for deterministic sampling
+
+    ChatCompletionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+        created:
+          type: integer
+        model:
+          type: string
+        choices:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              message:
+                type: object
+                properties:
+                  role:
+                    type: string
+                  content:
+                    type: string
+                  tool_calls:
+                    type: array
+                    items:
+                      type: object
+              finish_reason:
+                type: string
+                enum: [stop, length, tool_calls, content_filter]
+        usage:
+          type: object
+          properties:
+            prompt_tokens:
+              type: integer
+            completion_tokens:
+              type: integer
+            total_tokens:
+              type: integer
+        system_fingerprint:
+          type: string
+
+    EmbeddingRequest:
+      type: object
+      required:
+        - model
+        - input
+      properties:
+        model:
+          type: string
+          enum:
+            - text-embedding-3-small
+            - text-embedding-3-large
+            - text-embedding-ada-002
+        input:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+          description: Text to embed
+        encoding_format:
+          type: string
+          enum: [float, base64]
+          default: float
+        dimensions:
+          type: integer
+          description: Output dimensions (text-embedding-3 only)
+        user:
+          type: string
+
+    EmbeddingResponse:
+      type: object
+      properties:
+        object:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              object:
+                type: string
+              embedding:
+                type: array
+                items:
+                  type: number
+              index:
+                type: integer
+        model:
+          type: string
+        usage:
+          type: object
+          properties:
+            prompt_tokens:
+              type: integer
+            total_tokens:
+              type: integer
+
+    ImageGenerationRequest:
+      type: object
+      required:
+        - prompt
+      properties:
+        model:
+          type: string
+          enum: [dall-e-3, dall-e-2]
+          default: dall-e-3
+        prompt:
+          type: string
+          maxLength: 4000
+          description: Image description
+        n:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 1
+          description: Number of images (dall-e-3 only supports 1)
+        quality:
+          type: string
+          enum: [standard, hd]
+          default: standard
+          description: Quality level (dall-e-3 only)
+        response_format:
+          type: string
+          enum: [url, b64_json]
+          default: url
+        size:
+          type: string
+          enum: [256x256, 512x512, 1024x1024, 1792x1024, 1024x1792]
+          default: 1024x1024
+        style:
+          type: string
+          enum: [vivid, natural]
+          default: vivid
+          description: Style (dall-e-3 only)
+        user:
+          type: string
+
+    ImageResponse:
+      type: object
+      properties:
+        created:
+          type: integer
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+              b64_json:
+                type: string
+              revised_prompt:
+                type: string
+
+    Model:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+        created:
+          type: integer
+        owned_by:
+          type: string
+
+    SpeechRequest:
+      type: object
+      required:
+        - model
+        - input
+        - voice
+      properties:
+        model:
+          type: string
+          enum: [tts-1, tts-1-hd]
+        input:
+          type: string
+          maxLength: 4096
+          description: Text to speak
+        voice:
+          type: string
+          enum: [alloy, echo, fable, onyx, nova, shimmer]
+        response_format:
+          type: string
+          enum: [mp3, opus, aac, flac, wav, pcm]
+          default: mp3
+        speed:
+          type: number
+          minimum: 0.25
+          maximum: 4.0
+          default: 1.0
+
+    ModerationRequest:
+      type: object
+      required:
+        - input
+      properties:
+        input:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+        model:
+          type: string
+          enum: [text-moderation-latest, text-moderation-stable]
+          default: text-moderation-latest
+
+    ModerationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        model:
+          type: string
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              flagged:
+                type: boolean
+              categories:
+                type: object
+                properties:
+                  hate:
+                    type: boolean
+                  hate/threatening:
+                    type: boolean
+                  harassment:
+                    type: boolean
+                  harassment/threatening:
+                    type: boolean
+                  self-harm:
+                    type: boolean
+                  self-harm/intent:
+                    type: boolean
+                  self-harm/instructions:
+                    type: boolean
+                  sexual:
+                    type: boolean
+                  sexual/minors:
+                    type: boolean
+                  violence:
+                    type: boolean
+                  violence/graphic:
+                    type: boolean
+              category_scores:
+                type: object
+                additionalProperties:
+                  type: number
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ============ CHAT ============
+  /chat/completions:
+    post:
+      operationId: createChatCompletion
+      summary: Create chat completion
+      description: |
+        Generate a response from a conversation. This is the primary
+        endpoint for interacting with GPT models.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatCompletionRequest'
+            examples:
+              simple:
+                summary: Simple chat
+                value:
+                  model: "gpt-4o-mini"
+                  messages:
+                    - role: "user"
+                      content: "Hello, how are you?"
+              withSystem:
+                summary: With system prompt
+                value:
+                  model: "gpt-4o"
+                  messages:
+                    - role: "system"
+                      content: "You are a helpful assistant that speaks like a pirate."
+                    - role: "user"
+                      content: "Tell me about the weather."
+              multimodal:
+                summary: With image (vision)
+                value:
+                  model: "gpt-4o"
+                  messages:
+                    - role: "user"
+                      content:
+                        - type: "text"
+                          text: "What's in this image?"
+                        - type: "image_url"
+                          image_url:
+                            url: "https://example.com/image.jpg"
+              jsonMode:
+                summary: JSON response mode
+                value:
+                  model: "gpt-4o"
+                  messages:
+                    - role: "system"
+                      content: "Return responses as JSON with keys: answer, confidence"
+                    - role: "user"
+                      content: "What is 2+2?"
+                  response_format:
+                    type: "json_object"
+              withTools:
+                summary: Function calling
+                value:
+                  model: "gpt-4o"
+                  messages:
+                    - role: "user"
+                      content: "What's the weather in San Francisco?"
+                  tools:
+                    - type: "function"
+                      function:
+                        name: "get_weather"
+                        description: "Get current weather for a location"
+                        parameters:
+                          type: "object"
+                          properties:
+                            location:
+                              type: "string"
+                              description: "City name"
+                          required: ["location"]
+      responses:
+        '200':
+          description: Chat completion response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatCompletionResponse'
+
+  # ============ EMBEDDINGS ============
+  /embeddings:
+    post:
+      operationId: createEmbedding
+      summary: Create embeddings
+      description: |
+        Generate vector embeddings for text. Useful for:
+        - Semantic search
+        - Clustering
+        - Recommendations
+        - Anomaly detection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmbeddingRequest'
+            examples:
+              single:
+                summary: Single text
+                value:
+                  model: "text-embedding-3-small"
+                  input: "The quick brown fox jumps over the lazy dog"
+              batch:
+                summary: Batch embedding
+                value:
+                  model: "text-embedding-3-small"
+                  input:
+                    - "First document"
+                    - "Second document"
+                    - "Third document"
+              customDimensions:
+                summary: Custom dimensions
+                value:
+                  model: "text-embedding-3-large"
+                  input: "Reduce dimensionality"
+                  dimensions: 256
+      responses:
+        '200':
+          description: Embedding response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmbeddingResponse'
+
+  # ============ IMAGES ============
+  /images/generations:
+    post:
+      operationId: createImage
+      summary: Generate images
+      description: Generate images from text prompts using DALL·E
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageGenerationRequest'
+            examples:
+              basic:
+                summary: Basic generation
+                value:
+                  model: "dall-e-3"
+                  prompt: "A white siamese cat sitting on a windowsill at sunset"
+              highQuality:
+                summary: HD quality
+                value:
+                  model: "dall-e-3"
+                  prompt: "A photorealistic mountain landscape with a lake"
+                  quality: "hd"
+                  size: "1792x1024"
+              stylized:
+                summary: Natural style
+                value:
+                  model: "dall-e-3"
+                  prompt: "A portrait of a person reading a book"
+                  style: "natural"
+      responses:
+        '200':
+          description: Generated images
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageResponse'
+
+  # ============ AUDIO ============
+  /audio/speech:
+    post:
+      operationId: createSpeech
+      summary: Text to speech
+      description: Generate spoken audio from text
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpeechRequest'
+            examples:
+              basic:
+                summary: Basic TTS
+                value:
+                  model: "tts-1"
+                  input: "Hello, welcome to our service!"
+                  voice: "alloy"
+              highQuality:
+                summary: HD quality
+                value:
+                  model: "tts-1-hd"
+                  input: "This is high quality speech synthesis."
+                  voice: "nova"
+                  speed: 1.0
+      responses:
+        '200':
+          description: Audio file
+          content:
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
+
+  /audio/transcriptions:
+    post:
+      operationId: createTranscription
+      summary: Speech to text
+      description: Transcribe audio to text using Whisper
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - model
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Audio file (mp3, wav, etc.)
+                model:
+                  type: string
+                  enum: [whisper-1]
+                language:
+                  type: string
+                  description: ISO-639-1 language code
+                prompt:
+                  type: string
+                  description: Guide transcription style
+                response_format:
+                  type: string
+                  enum: [json, text, srt, verbose_json, vtt]
+                  default: json
+                temperature:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+      responses:
+        '200':
+          description: Transcription
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text:
+                    type: string
+
+  # ============ MODELS ============
+  /models:
+    get:
+      operationId: listModels
+      summary: List models
+      description: Returns available models
+      responses:
+        '200':
+          description: List of models
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Model'
+
+  /models/{model}:
+    get:
+      operationId: getModel
+      summary: Get model details
+      description: Returns details about a specific model
+      parameters:
+        - name: model
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Model details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Model'
+
+  # ============ MODERATION ============
+  /moderations:
+    post:
+      operationId: createModeration
+      summary: Content moderation
+      description: Check if text violates OpenAI's content policy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationRequest'
+            examples:
+              single:
+                summary: Single text
+                value:
+                  input: "I want to learn about cooking"
+              batch:
+                summary: Batch check
+                value:
+                  input:
+                    - "First message to check"
+                    - "Second message to check"
+      responses:
+        '200':
+          description: Moderation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModerationResponse'
