@@ -7,35 +7,29 @@ Drop-in schemas for APIs requiring API key authentication.
 | Schema | API | Operations | Status |
 |--------|-----|------------|--------|
 | [anthropic.yaml](anthropic.yaml) | Claude Messages | Chat, Vision, Tools, Token Count | ✅ Complete |
+| [sendgrid.yaml](sendgrid.yaml) | SendGrid Email | Send, Templates, Contacts, Validation | ✅ Complete |
 
 ## Coming Soon
 
 | Schema | API | Operations |
 |--------|-----|------------|
 | `openai.yaml` | OpenAI | GPT, DALL-E, Embeddings, Whisper |
-| `sendgrid.yaml` | SendGrid | Email sending, Templates |
 | `stripe.yaml` | Stripe | Payments, Customers, Invoices |
 
 ---
 
 ## Quick Start: Anthropic Claude
 
-### 1. Get API Key
-Visit https://console.anthropic.com/settings/keys
+### Get API Key
+https://console.anthropic.com/settings/keys
 
-### 2. Replace Placeholder
-```yaml
-{{ANTHROPIC_API_KEY}} → sk-ant-api03-...
-```
-
-### 3. Required Headers
+### Headers
 ```http
 x-api-key: {{ANTHROPIC_API_KEY}}
 anthropic-version: 2023-06-01
-Content-Type: application/json
 ```
 
-### 4. Example Request
+### Example
 ```bash
 curl https://api.anthropic.com/v1/messages \
   -H "x-api-key: $ANTHROPIC_API_KEY" \
@@ -44,39 +38,73 @@ curl https://api.anthropic.com/v1/messages \
   -d '{
     "model": "claude-sonnet-4-20250514",
     "max_tokens": 1024,
-    "messages": [
-      {"role": "user", "content": "Hello, Claude!"}
-    ]
+    "messages": [{"role": "user", "content": "Hello!"}]
   }'
 ```
 
-### 5. Available Models
+---
 
-| Model | Use Case | Context |
-|-------|----------|---------|
-| `claude-sonnet-4-20250514` | Balanced performance | 200K |
-| `claude-opus-4-20250514` | Most capable | 200K |
-| `claude-haiku-3-5-20241022` | Fast & affordable | 200K |
+## Quick Start: SendGrid
+
+### Get API Key
+https://app.sendgrid.com/settings/api_keys
+
+### Headers
+```http
+Authorization: Bearer {{SENDGRID_API_KEY}}
+Content-Type: application/json
+```
+
+### Example: Send Email
+```bash
+curl https://api.sendgrid.com/v3/mail/send \
+  -H "Authorization: Bearer $SENDGRID_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "personalizations": [{"to": [{"email": "recipient@example.com"}]}],
+    "from": {"email": "sender@yourdomain.com"},
+    "subject": "Hello from SendGrid!",
+    "content": [{"type": "text/html", "value": "<h1>Hello!</h1>"}]
+  }'
+```
+
+### Example: With Dynamic Template
+```bash
+curl https://api.sendgrid.com/v3/mail/send \
+  -H "Authorization: Bearer $SENDGRID_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "personalizations": [{
+      "to": [{"email": "customer@example.com"}],
+      "dynamic_template_data": {
+        "first_name": "Sarah",
+        "order_id": "12345"
+      }
+    }],
+    "from": {"email": "orders@yourstore.com"},
+    "template_id": "d-xxxxxxxxxxxx"
+  }'
+```
 
 ---
 
 ## Authentication Patterns
 
-### Header-based (Most Common)
-```yaml
-securitySchemes:
-  ApiKeyAuth:
-    type: apiKey
-    in: header
-    name: X-API-Key
-```
-
-### Bearer Token
+### Bearer Token (SendGrid, OpenAI)
 ```yaml
 securitySchemes:
   BearerAuth:
     type: http
     scheme: bearer
+```
+
+### Custom Header (Anthropic)
+```yaml
+securitySchemes:
+  ApiKeyAuth:
+    type: apiKey
+    in: header
+    name: x-api-key
 ```
 
 ### Query Parameter
@@ -90,20 +118,18 @@ securitySchemes:
 
 ## ChatGPT Actions Setup
 
-When using API Key schemas in ChatGPT Actions:
-
 1. Select **"API Key"** authentication type
-2. Choose **"Custom"** for header name
-3. Enter the header name (e.g., `x-api-key`)
-4. Paste your API key (stored securely by OpenAI)
+2. Choose **"Bearer"** or **"Custom"** based on API
+3. For custom headers, enter header name (e.g., `x-api-key`)
+4. Paste your API key (stored securely)
 
 ## Security Best Practices
 
 - Never commit API keys to version control
-- Use environment variables in local development
+- Use environment variables locally
 - Rotate keys periodically
-- Set up usage alerts/limits where available
-- Use separate keys for dev/prod environments
+- Set up usage alerts/limits
+- Use separate keys for dev/prod
 
 ---
 
