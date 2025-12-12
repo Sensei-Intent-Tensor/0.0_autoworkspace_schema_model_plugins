@@ -1,111 +1,110 @@
-# Keyless (Public) API Schemas
+# Keyless / Public API Schemas
 
-Drop-in schemas for APIs that require **no authentication**.
+Drop-in schemas for completely free, public APIs requiring no authentication.
 
 ## Available Schemas
 
 | Schema | API | Operations | Status |
 |--------|-----|------------|--------|
-| [open-meteo.yaml](weather/open-meteo.yaml) | Open-Meteo | Weather, Forecast, Air Quality | ✅ Complete |
-| [rest-countries.yaml](rest-countries.yaml) | REST Countries | Country data, Search, Regions | ✅ Complete |
+| [weather/open-meteo.yaml](weather/open-meteo.yaml) | Open-Meteo | Weather, Forecasts, Air Quality | ✅ Complete |
+| [wikipedia/wikipedia.yaml](wikipedia/wikipedia.yaml) | Wikipedia | Search, Summaries, On This Day | ✅ Complete |
 
 ## Coming Soon
 
 | Schema | API | Operations |
 |--------|-----|------------|
-| `wikipedia.yaml` | Wikipedia | Article search, Summaries |
-| `github-public.yaml` | GitHub (Public) | Repos, Users, Gists |
+| `rest-countries.yaml` | REST Countries | Country data, Flags, Currencies |
+| `github-public.yaml` | GitHub Public | Repos, Users, Gists (unauthenticated) |
 
 ---
 
-## Quick Start: REST Countries
-
-**No API key needed!**
+## Quick Start: Open-Meteo (Weather)
 
 ```bash
-# Get all countries
-curl "https://restcountries.com/v3.1/all"
+# Current weather in San Francisco
+curl "https://api.open-meteo.com/v1/forecast?latitude=37.77&longitude=-122.42&current=temperature_2m,wind_speed_10m"
 
-# Search by name
-curl "https://restcountries.com/v3.1/name/germany"
-
-# Get by code
-curl "https://restcountries.com/v3.1/alpha/US"
-
-# Get by region
-curl "https://restcountries.com/v3.1/region/europe"
-
-# Filter fields (reduce response size)
-curl "https://restcountries.com/v3.1/all?fields=name,capital,population,flags"
+# 7-day forecast
+curl "https://api.open-meteo.com/v1/forecast?latitude=37.77&longitude=-122.42&daily=temperature_2m_max,temperature_2m_min&timezone=America/Los_Angeles"
 ```
-
-### Available Endpoints
-
-| Endpoint | Description | Example |
-|----------|-------------|---------|
-| `/all` | All 250+ countries | `/all` |
-| `/name/{name}` | Search by name | `/name/united` |
-| `/alpha/{code}` | Get by ISO code | `/alpha/US` or `/alpha/USA` |
-| `/alpha?codes=` | Multiple codes | `/alpha?codes=US,GB,DE` |
-| `/currency/{currency}` | By currency | `/currency/EUR` |
-| `/lang/{language}` | By language | `/lang/spanish` |
-| `/capital/{capital}` | By capital city | `/capital/berlin` |
-| `/region/{region}` | By region | `/region/europe` |
-| `/subregion/{subregion}` | By subregion | `/subregion/northern%20europe` |
-| `/demonym/{demonym}` | By demonym | `/demonym/american` |
-| `/translation/{name}` | By translated name | `/translation/deutschland` |
-
-### Field Filtering
-
-Reduce response size by specifying fields:
-
-```
-?fields=name,capital,population,flags,currencies,languages
-```
-
-Available fields: `name`, `tld`, `cca2`, `ccn3`, `cca3`, `cioc`, `independent`, `status`, `unMember`, `currencies`, `idd`, `capital`, `altSpellings`, `region`, `subregion`, `languages`, `translations`, `latlng`, `landlocked`, `borders`, `area`, `demonyms`, `flag`, `maps`, `population`, `gini`, `fifa`, `car`, `timezones`, `continents`, `flags`, `coatOfArms`, `startOfWeek`, `capitalInfo`, `postalCode`
 
 ---
 
-## Quick Start: Open-Meteo
-
-**No API key needed!**
+## Quick Start: Wikipedia
 
 ```bash
-# Current weather + 7-day forecast
-curl "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&daily=temperature_2m_max,temperature_2m_min"
+# Search articles
+curl "https://en.wikipedia.org/api/rest_v1/page/search/title?q=machine%20learning&limit=5"
 
-# Geocoding (find coordinates)
-curl "https://geocoding-api.open-meteo.com/v1/search?name=Berlin"
+# Get article summary
+curl "https://en.wikipedia.org/api/rest_v1/page/summary/Artificial_intelligence"
+
+# On this day events
+curl "https://en.wikipedia.org/api/rest_v1/feed/onthisday/all/12/12"
+
+# Random article
+curl "https://en.wikipedia.org/api/rest_v1/page/random/summary"
+
+# Most read articles yesterday
+curl "https://en.wikipedia.org/api/rest_v1/feed/most-read/2024/12/11"
 ```
 
 ---
 
 ## Why Keyless APIs?
 
-These APIs are perfect for:
+**Zero friction integration:**
+- No signup required
+- No API keys to manage
+- No rate limit tiers to worry about
+- No billing surprises
 
-- **Prototyping** - No signup friction
-- **Education** - Students can start immediately  
-- **Public data** - Weather, geography, reference data
-- **ChatGPT Actions** - Simplest integration path
-
-### Limitations
-
-- Often rate-limited (be respectful)
-- May lack features of paid APIs
-- No SLA guarantees
-- Data freshness varies
+**Perfect for:**
+- Prototyping and MVPs
+- Educational projects
+- Personal tools
+- Public data enrichment
+- ChatGPT Actions (simplest setup)
 
 ---
 
 ## ChatGPT Actions Setup
 
-For keyless APIs in ChatGPT Actions:
+For keyless APIs, setup is trivial:
 
-1. Select **"None"** for authentication
-2. Paste the schema YAML
-3. Test immediately - no credentials needed!
+1. Import the schema YAML
+2. Select **"None"** for authentication
+3. Test immediately
+
+No OAuth configuration, no API key storage, no callback URLs.
+
+---
+
+## Rate Limit Guidelines
+
+Even though these APIs are free, be respectful:
+
+| API | Guideline |
+|-----|-----------|
+| Open-Meteo | 10,000 requests/day (non-commercial) |
+| Wikipedia | ~200 requests/second |
+| REST Countries | Unlimited (be reasonable) |
+| GitHub Public | 60 requests/hour (unauthenticated) |
+
+---
+
+## Other Notable Keyless APIs
+
+APIs we may add schemas for in the future:
+
+| Category | APIs |
+|----------|------|
+| **Data** | JSONPlaceholder, REST Countries, IP-API |
+| **Reference** | Wikipedia, Open Library, Dictionary API |
+| **Science** | NASA APOD, USGS Earthquake, Open-Meteo |
+| **Fun** | Cat Facts, Dog API, Chuck Norris Jokes |
+| **Utility** | QR Code Generator, URL Shorteners |
+| **Finance** | ExchangeRate-API (limited), CoinGecko |
 
 ---
 
