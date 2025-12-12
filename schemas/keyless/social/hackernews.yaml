@@ -1,0 +1,434 @@
+openapi: "3.1.0"
+info:
+  title: Hacker News API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for the official Hacker News Firebase API.
+    
+    ## Authentication
+    **None required** - Completely public
+    
+    ## Key Features
+    - Top, new, best, ask, show, job stories
+    - Individual item details (stories, comments, polls)
+    - User profiles
+    - Real-time updates via Firebase
+    
+    ## ChatGPT Compatible
+    Yes
+    
+    ## Rate Limits
+    No published limits, but be reasonable (~1 req/sec)
+    
+    ## Item Types
+    - `story`: News story or link
+    - `comment`: Comment on story
+    - `job`: Job posting
+    - `poll`: Poll
+    - `pollopt`: Poll option
+    
+    ## Official Documentation
+    https://github.com/HackerNews/API
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+  externalDocs:
+    description: Hacker News API Documentation
+    url: https://github.com/HackerNews/API
+
+servers:
+  - url: https://hacker-news.firebaseio.com/v0
+    description: Hacker News Firebase API
+
+components:
+  schemas:
+    Item:
+      type: object
+      description: Generic HN item (story, comment, job, poll, pollopt)
+      properties:
+        id:
+          type: integer
+          description: Unique item ID
+        type:
+          type: string
+          enum: [story, comment, job, poll, pollopt]
+          description: Item type
+        by:
+          type: string
+          description: Username of author
+        time:
+          type: integer
+          description: Unix timestamp
+        text:
+          type: string
+          description: HTML content (comments, ask, job)
+        dead:
+          type: boolean
+          description: True if item is dead/deleted
+        deleted:
+          type: boolean
+          description: True if item was deleted
+        parent:
+          type: integer
+          description: Parent item ID (for comments)
+        poll:
+          type: integer
+          description: Poll ID (for pollopts)
+        kids:
+          type: array
+          description: Child comment IDs (sorted by ranking)
+          items:
+            type: integer
+        url:
+          type: string
+          description: Story URL
+        score:
+          type: integer
+          description: Story/comment score
+        title:
+          type: string
+          description: Story title
+        parts:
+          type: array
+          description: Poll option IDs
+          items:
+            type: integer
+        descendants:
+          type: integer
+          description: Total comment count
+
+    Story:
+      type: object
+      description: A news story or link
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [story]
+        by:
+          type: string
+        time:
+          type: integer
+        title:
+          type: string
+        url:
+          type: string
+          description: Link URL (empty for Ask HN)
+        text:
+          type: string
+          description: Body text (Ask HN posts)
+        score:
+          type: integer
+        descendants:
+          type: integer
+          description: Total comments
+        kids:
+          type: array
+          items:
+            type: integer
+
+    Comment:
+      type: object
+      description: A comment on a story
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [comment]
+        by:
+          type: string
+        time:
+          type: integer
+        text:
+          type: string
+          description: HTML comment body
+        parent:
+          type: integer
+          description: Parent item ID
+        kids:
+          type: array
+          description: Child comment IDs
+          items:
+            type: integer
+        deleted:
+          type: boolean
+        dead:
+          type: boolean
+
+    User:
+      type: object
+      description: Hacker News user profile
+      properties:
+        id:
+          type: string
+          description: Username (case-sensitive)
+        created:
+          type: integer
+          description: Account creation Unix timestamp
+        karma:
+          type: integer
+          description: User's karma score
+        about:
+          type: string
+          description: User bio (HTML)
+        submitted:
+          type: array
+          description: IDs of user's submissions
+          items:
+            type: integer
+
+    Updates:
+      type: object
+      description: Recently changed items and profiles
+      properties:
+        items:
+          type: array
+          description: Changed item IDs
+          items:
+            type: integer
+        profiles:
+          type: array
+          description: Changed usernames
+          items:
+            type: string
+
+paths:
+  # ============ STORY LISTS ============
+  /topstories.json:
+    get:
+      operationId: getTopStories
+      summary: Get top stories
+      description: |
+        Returns IDs of top 500 stories.
+        These are the stories on the front page, ranked by HN algorithm.
+      tags:
+        - Stories
+      responses:
+        '200':
+          description: Array of story IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+                maxItems: 500
+              example: [39234567, 39234566, 39234565]
+
+  /newstories.json:
+    get:
+      operationId: getNewStories
+      summary: Get newest stories
+      description: Returns IDs of newest 500 stories
+      tags:
+        - Stories
+      responses:
+        '200':
+          description: Array of story IDs (newest first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+
+  /beststories.json:
+    get:
+      operationId: getBestStories
+      summary: Get best stories
+      description: Returns IDs of best 500 stories (highest voted)
+      tags:
+        - Stories
+      responses:
+        '200':
+          description: Array of story IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+
+  /askstories.json:
+    get:
+      operationId: getAskStories
+      summary: Get Ask HN stories
+      description: Returns IDs of latest Ask HN posts
+      tags:
+        - Stories
+      responses:
+        '200':
+          description: Array of Ask HN story IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+
+  /showstories.json:
+    get:
+      operationId: getShowStories
+      summary: Get Show HN stories
+      description: Returns IDs of latest Show HN posts
+      tags:
+        - Stories
+      responses:
+        '200':
+          description: Array of Show HN story IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+
+  /jobstories.json:
+    get:
+      operationId: getJobStories
+      summary: Get job postings
+      description: Returns IDs of latest job posts
+      tags:
+        - Stories
+      responses:
+        '200':
+          description: Array of job story IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+
+  # ============ INDIVIDUAL ITEMS ============
+  /item/{id}.json:
+    get:
+      operationId: getItem
+      summary: Get item by ID
+      description: |
+        Returns a single item (story, comment, job, poll, or pollopt).
+        
+        Use this to fetch full details after getting IDs from story lists.
+      tags:
+        - Items
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Item ID
+          schema:
+            type: integer
+          example: 39234567
+      responses:
+        '200':
+          description: Item details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+              examples:
+                story:
+                  summary: A story
+                  value:
+                    id: 39234567
+                    type: "story"
+                    by: "pg"
+                    time: 1703980800
+                    title: "Show HN: My new project"
+                    url: "https://example.com"
+                    score: 142
+                    descendants: 47
+                    kids: [39234600, 39234601, 39234602]
+                comment:
+                  summary: A comment
+                  value:
+                    id: 39234600
+                    type: "comment"
+                    by: "dang"
+                    time: 1703980900
+                    text: "This is a great project!"
+                    parent: 39234567
+                    kids: [39234610]
+                askhn:
+                  summary: Ask HN post
+                  value:
+                    id: 39234700
+                    type: "story"
+                    by: "someone"
+                    time: 1703981000
+                    title: "Ask HN: Best way to learn Rust?"
+                    text: "I'm a Python developer looking to learn Rust..."
+                    score: 89
+                    descendants: 156
+                    kids: [39234701, 39234702]
+        '404':
+          description: Item not found
+
+  # ============ USERS ============
+  /user/{username}.json:
+    get:
+      operationId: getUser
+      summary: Get user profile
+      description: Returns user profile information
+      tags:
+        - Users
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description: Username (case-sensitive)
+          schema:
+            type: string
+          example: "pg"
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: "pg"
+                created: 1160418092
+                karma: 157236
+                about: "Creator of HN"
+                submitted: [39234567, 39234500, 39234400]
+        '404':
+          description: User not found
+
+  # ============ LIVE DATA ============
+  /maxitem.json:
+    get:
+      operationId: getMaxItem
+      summary: Get max item ID
+      description: Returns the current largest item ID
+      tags:
+        - Meta
+      responses:
+        '200':
+          description: Maximum item ID
+          content:
+            application/json:
+              schema:
+                type: integer
+              example: 39234567
+
+  /updates.json:
+    get:
+      operationId: getUpdates
+      summary: Get recent updates
+      description: Returns IDs of recently changed items and profiles
+      tags:
+        - Meta
+      responses:
+        '200':
+          description: Recent updates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Updates'
+              example:
+                items: [39234567, 39234566, 39234565]
+                profiles: ["pg", "dang"]
