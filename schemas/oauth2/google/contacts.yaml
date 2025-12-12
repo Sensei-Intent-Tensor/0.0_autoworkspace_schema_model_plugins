@@ -1,0 +1,787 @@
+openapi: "3.1.0"
+info:
+  title: Google People API (Contacts)
+  version: "1.0.0"
+  description: |
+    Drop-in schema for Google People API (formerly Contacts API).
+    
+    ## Required Placeholders
+    - `{{CLIENT_ID}}`: Your Google OAuth client ID
+    - `{{CLIENT_SECRET}}`: Your Google OAuth client secret
+    - `{{CALLBACK_URL}}`: Your platform's OAuth callback URL
+    
+    ## Scopes
+    - `https://www.googleapis.com/auth/contacts` - Full contacts access
+    - `https://www.googleapis.com/auth/contacts.readonly` - Read-only access
+    - `https://www.googleapis.com/auth/contacts.other.readonly` - "Other contacts"
+    - `https://www.googleapis.com/auth/directory.readonly` - Organization directory
+    
+    ## Auth Type
+    OAuth2 Authorization Code
+    
+    ## ChatGPT Compatible
+    Yes
+    
+    ## Note
+    The People API replaced the older Contacts API. Resource names
+    use format `people/{resourceId}` or `people/me` for authenticated user.
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+
+servers:
+  - url: https://people.googleapis.com/v1
+    description: Google People API v1
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://accounts.google.com/o/oauth2/v2/auth
+          tokenUrl: https://oauth2.googleapis.com/token
+          scopes:
+            https://www.googleapis.com/auth/contacts: Full contacts access
+            https://www.googleapis.com/auth/contacts.readonly: Read-only contacts
+            https://www.googleapis.com/auth/contacts.other.readonly: Other contacts
+            https://www.googleapis.com/auth/directory.readonly: Directory access
+
+  schemas:
+    Person:
+      type: object
+      properties:
+        resourceName:
+          type: string
+          description: Unique identifier (e.g., "people/c123456")
+        etag:
+          type: string
+          description: Version tag for updates
+        metadata:
+          type: object
+          properties:
+            sources:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    enum: [ACCOUNT, PROFILE, DOMAIN_PROFILE, CONTACT, OTHER_CONTACT, DOMAIN_CONTACT]
+                  id:
+                    type: string
+            objectType:
+              type: string
+              enum: [PERSON, PAGE]
+        names:
+          type: array
+          items:
+            type: object
+            properties:
+              displayName:
+                type: string
+              familyName:
+                type: string
+              givenName:
+                type: string
+              middleName:
+                type: string
+              honorificPrefix:
+                type: string
+              honorificSuffix:
+                type: string
+              phoneticFullName:
+                type: string
+        nicknames:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+              type:
+                type: string
+                enum: [DEFAULT, MAIDEN_NAME, INITIALS, GPLUS, OTHER_NAME, ALTERNATE_NAME, SHORT_NAME]
+        emailAddresses:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+              type:
+                type: string
+              displayName:
+                type: string
+              formattedType:
+                type: string
+        phoneNumbers:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+              type:
+                type: string
+              formattedType:
+                type: string
+              canonicalForm:
+                type: string
+        addresses:
+          type: array
+          items:
+            type: object
+            properties:
+              formattedValue:
+                type: string
+              type:
+                type: string
+              streetAddress:
+                type: string
+              extendedAddress:
+                type: string
+              city:
+                type: string
+              region:
+                type: string
+              postalCode:
+                type: string
+              country:
+                type: string
+              countryCode:
+                type: string
+        organizations:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              title:
+                type: string
+              department:
+                type: string
+              type:
+                type: string
+              location:
+                type: string
+              startDate:
+                type: object
+                properties:
+                  year:
+                    type: integer
+                  month:
+                    type: integer
+                  day:
+                    type: integer
+              endDate:
+                type: object
+                properties:
+                  year:
+                    type: integer
+                  month:
+                    type: integer
+                  day:
+                    type: integer
+        birthdays:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: object
+                properties:
+                  year:
+                    type: integer
+                  month:
+                    type: integer
+                  day:
+                    type: integer
+              text:
+                type: string
+        urls:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+              type:
+                type: string
+              formattedType:
+                type: string
+        photos:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+              default:
+                type: boolean
+        biographies:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+              contentType:
+                type: string
+                enum: [TEXT_PLAIN, TEXT_HTML]
+        events:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: object
+                properties:
+                  year:
+                    type: integer
+                  month:
+                    type: integer
+                  day:
+                    type: integer
+              type:
+                type: string
+              formattedType:
+                type: string
+        relations:
+          type: array
+          items:
+            type: object
+            properties:
+              person:
+                type: string
+              type:
+                type: string
+              formattedType:
+                type: string
+        memberships:
+          type: array
+          items:
+            type: object
+            properties:
+              contactGroupMembership:
+                type: object
+                properties:
+                  contactGroupId:
+                    type: string
+                  contactGroupResourceName:
+                    type: string
+        userDefined:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+
+    ContactGroup:
+      type: object
+      properties:
+        resourceName:
+          type: string
+        etag:
+          type: string
+        name:
+          type: string
+        formattedName:
+          type: string
+        groupType:
+          type: string
+          enum: [USER_CONTACT_GROUP, SYSTEM_CONTACT_GROUP]
+        memberCount:
+          type: integer
+        memberResourceNames:
+          type: array
+          items:
+            type: string
+
+    ListConnectionsResponse:
+      type: object
+      properties:
+        connections:
+          type: array
+          items:
+            $ref: '#/components/schemas/Person'
+        nextPageToken:
+          type: string
+        nextSyncToken:
+          type: string
+        totalPeople:
+          type: integer
+        totalItems:
+          type: integer
+
+security:
+  - OAuth2:
+      - https://www.googleapis.com/auth/contacts
+
+paths:
+  /people/me/connections:
+    get:
+      operationId: listContacts
+      summary: List contacts
+      description: Returns the user's contacts
+      parameters:
+        - name: pageSize
+          in: query
+          description: Max contacts per page (1-1000)
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+        - name: pageToken
+          in: query
+          description: Pagination token
+          schema:
+            type: string
+        - name: personFields
+          in: query
+          required: true
+          description: |
+            Fields to return. Common values:
+            - names
+            - emailAddresses
+            - phoneNumbers
+            - addresses
+            - organizations
+            - birthdays
+            - photos
+            - memberships
+          schema:
+            type: string
+            default: "names,emailAddresses,phoneNumbers"
+        - name: sortOrder
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [LAST_MODIFIED_ASCENDING, LAST_MODIFIED_DESCENDING, FIRST_NAME_ASCENDING, LAST_NAME_ASCENDING]
+        - name: syncToken
+          in: query
+          description: Sync token for incremental updates
+          schema:
+            type: string
+        - name: sources
+          in: query
+          description: Sources to include
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [READ_SOURCE_TYPE_PROFILE, READ_SOURCE_TYPE_CONTACT, READ_SOURCE_TYPE_DOMAIN_CONTACT]
+      responses:
+        '200':
+          description: List of contacts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListConnectionsResponse'
+
+  /people:createContact:
+    post:
+      operationId: createContact
+      summary: Create a contact
+      description: Creates a new contact
+      parameters:
+        - name: personFields
+          in: query
+          description: Fields to return in response
+          schema:
+            type: string
+            default: "names,emailAddresses,phoneNumbers"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Person'
+            examples:
+              simpleContact:
+                summary: Basic contact
+                value:
+                  names:
+                    - givenName: "John"
+                      familyName: "Doe"
+                  emailAddresses:
+                    - value: "john.doe@example.com"
+                      type: "work"
+                  phoneNumbers:
+                    - value: "+1-555-123-4567"
+                      type: "mobile"
+              fullContact:
+                summary: Detailed contact
+                value:
+                  names:
+                    - givenName: "Jane"
+                      familyName: "Smith"
+                      middleName: "Marie"
+                  emailAddresses:
+                    - value: "jane@company.com"
+                      type: "work"
+                    - value: "jane.personal@gmail.com"
+                      type: "home"
+                  phoneNumbers:
+                    - value: "+1-555-987-6543"
+                      type: "work"
+                  organizations:
+                    - name: "Acme Corp"
+                      title: "Senior Engineer"
+                      department: "Engineering"
+                  addresses:
+                    - streetAddress: "123 Main St"
+                      city: "San Francisco"
+                      region: "CA"
+                      postalCode: "94102"
+                      country: "USA"
+                      type: "work"
+      responses:
+        '200':
+          description: Created contact
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+
+  /people/{resourceName}:
+    get:
+      operationId: getContact
+      summary: Get a contact
+      description: Returns a specific contact
+      parameters:
+        - name: resourceName
+          in: path
+          required: true
+          description: Resource name (e.g., "people/c123456")
+          schema:
+            type: string
+        - name: personFields
+          in: query
+          required: true
+          description: Fields to return
+          schema:
+            type: string
+            default: "names,emailAddresses,phoneNumbers,organizations,addresses"
+      responses:
+        '200':
+          description: Contact details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+
+    delete:
+      operationId: deleteContact
+      summary: Delete a contact
+      description: Permanently deletes a contact
+      parameters:
+        - name: resourceName
+          in: path
+          required: true
+          description: Resource name to delete
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Contact deleted
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /people/{resourceName}:updateContact:
+    patch:
+      operationId: updateContact
+      summary: Update a contact
+      description: Updates an existing contact
+      parameters:
+        - name: resourceName
+          in: path
+          required: true
+          description: Resource name to update
+          schema:
+            type: string
+        - name: updatePersonFields
+          in: query
+          required: true
+          description: Fields to update (comma-separated)
+          schema:
+            type: string
+        - name: personFields
+          in: query
+          description: Fields to return in response
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - etag
+              properties:
+                etag:
+                  type: string
+                  description: Required - get from getContact
+                names:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      givenName:
+                        type: string
+                      familyName:
+                        type: string
+                emailAddresses:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      value:
+                        type: string
+                      type:
+                        type: string
+                phoneNumbers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      value:
+                        type: string
+                      type:
+                        type: string
+            examples:
+              updateEmail:
+                summary: Update email address
+                value:
+                  etag: "%EgcBAj0JPjcuGgQBAgUH"
+                  emailAddresses:
+                    - value: "new.email@example.com"
+                      type: "work"
+      responses:
+        '200':
+          description: Updated contact
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+
+  /people:searchContacts:
+    get:
+      operationId: searchContacts
+      summary: Search contacts
+      description: Searches contacts by query
+      parameters:
+        - name: query
+          in: query
+          required: true
+          description: Search query (name, email, phone)
+          schema:
+            type: string
+        - name: pageSize
+          in: query
+          description: Max results (1-30)
+          schema:
+            type: integer
+            default: 10
+            maximum: 30
+        - name: readMask
+          in: query
+          required: true
+          description: Fields to return
+          schema:
+            type: string
+            default: "names,emailAddresses,phoneNumbers"
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        person:
+                          $ref: '#/components/schemas/Person'
+
+  /people:batchCreateContacts:
+    post:
+      operationId: batchCreateContacts
+      summary: Create multiple contacts
+      description: Creates up to 200 contacts in a single request
+      parameters:
+        - name: readMask
+          in: query
+          description: Fields to return
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - contacts
+              properties:
+                contacts:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      contactPerson:
+                        $ref: '#/components/schemas/Person'
+                  maxItems: 200
+      responses:
+        '200':
+          description: Created contacts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  createdPeople:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        person:
+                          $ref: '#/components/schemas/Person'
+
+  /contactGroups:
+    get:
+      operationId: listContactGroups
+      summary: List contact groups
+      description: Returns all contact groups (labels)
+      parameters:
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 30
+            maximum: 1000
+        - name: pageToken
+          in: query
+          schema:
+            type: string
+        - name: groupFields
+          in: query
+          description: Fields to return
+          schema:
+            type: string
+            default: "name,groupType,memberCount"
+      responses:
+        '200':
+          description: List of contact groups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contactGroups:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ContactGroup'
+                  totalItems:
+                    type: integer
+                  nextPageToken:
+                    type: string
+
+    post:
+      operationId: createContactGroup
+      summary: Create a contact group
+      description: Creates a new contact group (label)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - contactGroup
+              properties:
+                contactGroup:
+                  type: object
+                  required:
+                    - name
+                  properties:
+                    name:
+                      type: string
+                      description: Group name
+            examples:
+              createGroup:
+                summary: Create a group
+                value:
+                  contactGroup:
+                    name: "VIP Clients"
+      responses:
+        '200':
+          description: Created group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactGroup'
+
+  /contactGroups/{resourceName}/members:modify:
+    post:
+      operationId: modifyContactGroupMembers
+      summary: Add/remove group members
+      description: Adds or removes contacts from a group
+      parameters:
+        - name: resourceName
+          in: path
+          required: true
+          description: Group resource name (e.g., "contactGroups/abc123")
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resourceNamesToAdd:
+                  type: array
+                  items:
+                    type: string
+                  description: Contact resource names to add
+                resourceNamesToRemove:
+                  type: array
+                  items:
+                    type: string
+                  description: Contact resource names to remove
+            examples:
+              addMembers:
+                summary: Add contacts to group
+                value:
+                  resourceNamesToAdd:
+                    - "people/c123456"
+                    - "people/c789012"
+      responses:
+        '200':
+          description: Modified group
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notFoundResourceNames:
+                    type: array
+                    items:
+                      type: string
+                  canNotRemoveLastContactGroupResourceNames:
+                    type: array
+                    items:
+                      type: string
