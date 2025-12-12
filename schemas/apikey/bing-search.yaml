@@ -1,0 +1,763 @@
+openapi: "3.1.0"
+info:
+  title: Bing Web Search API
+  version: "7.0"
+  description: |
+    Drop-in schema for Microsoft Bing Web Search API.
+    
+    ## Required Setup
+    1. Create Azure account: https://azure.microsoft.com/
+    2. Create Bing Search resource: https://portal.azure.com/#create/Microsoft.BingSearch
+    3. Get API key from Keys and Endpoint
+    
+    ## Placeholder
+    - `{{BING_API_KEY}}`: Your Bing Search API subscription key
+    
+    ## Free Tier (F1)
+    - 1,000 transactions/month FREE
+    - 3 calls/second rate limit
+    
+    ## Paid Tiers
+    - S1: $7 per 1,000 transactions
+    - S2: $3 per 1,000 transactions (volume)
+    
+    ## ChatGPT Compatible
+    Yes
+    
+    ## Features
+    - Web search results
+    - Related searches
+    - Spelling suggestions
+    - Computation answers
+    - Time zone answers
+    - News, images, videos (separate endpoints)
+    
+    ## Markets
+    Supports 40+ markets (countries/languages)
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+  externalDocs:
+    description: Bing Web Search API Documentation
+    url: https://docs.microsoft.com/en-us/bing/search-apis/bing-web-search/overview
+
+servers:
+  - url: https://api.bing.microsoft.com/v7.0
+    description: Bing Search API v7
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Ocp-Apim-Subscription-Key
+      description: Bing Search API subscription key
+
+  schemas:
+    SearchResponse:
+      type: object
+      properties:
+        _type:
+          type: string
+          example: "SearchResponse"
+        queryContext:
+          $ref: '#/components/schemas/QueryContext'
+        webPages:
+          $ref: '#/components/schemas/WebPages'
+        relatedSearches:
+          $ref: '#/components/schemas/RelatedSearches'
+        rankingResponse:
+          type: object
+          description: Suggested result ordering
+        computation:
+          $ref: '#/components/schemas/Computation'
+        timeZone:
+          $ref: '#/components/schemas/TimeZone'
+        news:
+          $ref: '#/components/schemas/News'
+        images:
+          $ref: '#/components/schemas/Images'
+        videos:
+          $ref: '#/components/schemas/Videos'
+        spellSuggestions:
+          $ref: '#/components/schemas/SpellSuggestions'
+
+    QueryContext:
+      type: object
+      properties:
+        originalQuery:
+          type: string
+        alteredQuery:
+          type: string
+          description: Spelling-corrected query
+        alterationOverrideQuery:
+          type: string
+        adultIntent:
+          type: boolean
+
+    WebPages:
+      type: object
+      properties:
+        webSearchUrl:
+          type: string
+          description: URL to Bing search results page
+        totalEstimatedMatches:
+          type: integer
+        value:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebPage'
+        someResultsRemoved:
+          type: boolean
+
+    WebPage:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          description: Page title
+        url:
+          type: string
+          description: Result URL
+        displayUrl:
+          type: string
+        snippet:
+          type: string
+          description: Text snippet
+        dateLastCrawled:
+          type: string
+          format: date-time
+        language:
+          type: string
+        isFamilyFriendly:
+          type: boolean
+        isNavigational:
+          type: boolean
+        cachedPageUrl:
+          type: string
+        deepLinks:
+          type: array
+          description: Site links
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              url:
+                type: string
+              snippet:
+                type: string
+        primaryImageOfPage:
+          type: object
+          properties:
+            thumbnailUrl:
+              type: string
+            width:
+              type: integer
+            height:
+              type: integer
+
+    RelatedSearches:
+      type: object
+      properties:
+        id:
+          type: string
+        value:
+          type: array
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+              displayText:
+                type: string
+              webSearchUrl:
+                type: string
+
+    Computation:
+      type: object
+      description: Math/conversion answers
+      properties:
+        id:
+          type: string
+        expression:
+          type: string
+          example: "2+2"
+        value:
+          type: string
+          example: "4"
+
+    TimeZone:
+      type: object
+      description: Time zone answers
+      properties:
+        id:
+          type: string
+        primaryCityTime:
+          type: object
+          properties:
+            location:
+              type: string
+            time:
+              type: string
+            utcOffset:
+              type: string
+        otherCityTimes:
+          type: array
+          items:
+            type: object
+            properties:
+              location:
+                type: string
+              time:
+                type: string
+              utcOffset:
+                type: string
+
+    News:
+      type: object
+      properties:
+        id:
+          type: string
+        value:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              url:
+                type: string
+              description:
+                type: string
+              datePublished:
+                type: string
+              provider:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+              image:
+                type: object
+                properties:
+                  thumbnail:
+                    type: object
+                    properties:
+                      contentUrl:
+                        type: string
+                      width:
+                        type: integer
+                      height:
+                        type: integer
+
+    Images:
+      type: object
+      properties:
+        id:
+          type: string
+        webSearchUrl:
+          type: string
+        isFamilyFriendly:
+          type: boolean
+        value:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              webSearchUrl:
+                type: string
+              thumbnailUrl:
+                type: string
+              contentUrl:
+                type: string
+              hostPageUrl:
+                type: string
+              width:
+                type: integer
+              height:
+                type: integer
+
+    Videos:
+      type: object
+      properties:
+        id:
+          type: string
+        webSearchUrl:
+          type: string
+        isFamilyFriendly:
+          type: boolean
+        value:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              webSearchUrl:
+                type: string
+              thumbnailUrl:
+                type: string
+              contentUrl:
+                type: string
+              hostPageUrl:
+                type: string
+              publisher:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+              duration:
+                type: string
+              viewCount:
+                type: integer
+
+    SpellSuggestions:
+      type: object
+      properties:
+        id:
+          type: string
+        value:
+          type: array
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+
+    Error:
+      type: object
+      properties:
+        _type:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              subCode:
+                type: string
+              message:
+                type: string
+              moreDetails:
+                type: string
+              parameter:
+                type: string
+              value:
+                type: string
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /search:
+    get:
+      operationId: webSearch
+      summary: Web search
+      description: |
+        Performs a Bing web search.
+        
+        ## Response Filters
+        Use `responseFilter` to control what's returned:
+        - `Webpages`: Web results only
+        - `Webpages,News`: Web + news
+        - `Computation`: Math answers
+        - `TimeZone`: Time zone queries
+        
+        ## Answer Count
+        Use `answerCount` to limit answer types returned.
+        
+        ## Promote
+        Use `promote` to ensure certain answer types appear.
+      tags:
+        - Search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query (max 1500 chars)
+          schema:
+            type: string
+            maxLength: 1500
+          example: "machine learning python"
+        - name: count
+          in: query
+          description: Number of results (1-50)
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 50
+        - name: offset
+          in: query
+          description: Results offset for pagination
+          schema:
+            type: integer
+            default: 0
+        - name: mkt
+          in: query
+          description: Market code (country-language)
+          schema:
+            type: string
+          examples:
+            us:
+              value: "en-US"
+              summary: United States English
+            uk:
+              value: "en-GB"
+              summary: United Kingdom English
+            germany:
+              value: "de-DE"
+              summary: Germany German
+            france:
+              value: "fr-FR"
+              summary: France French
+            japan:
+              value: "ja-JP"
+              summary: Japan Japanese
+        - name: safesearch
+          in: query
+          description: Safe search filter
+          schema:
+            type: string
+            enum: [Off, Moderate, Strict]
+            default: Moderate
+        - name: freshness
+          in: query
+          description: Filter by date
+          schema:
+            type: string
+          examples:
+            day:
+              value: "Day"
+              summary: Past 24 hours
+            week:
+              value: "Week"
+              summary: Past 7 days
+            month:
+              value: "Month"
+              summary: Past 30 days
+            range:
+              value: "2023-01-01..2023-12-31"
+              summary: Date range
+        - name: responseFilter
+          in: query
+          description: Filter response types (comma-separated)
+          schema:
+            type: string
+          examples:
+            web:
+              value: "Webpages"
+              summary: Web results only
+            news:
+              value: "Webpages,News"
+              summary: Web + news
+            all:
+              value: "Computation,Images,News,RelatedSearches,SpellSuggestions,TimeZone,Videos,Webpages"
+              summary: All types
+        - name: answerCount
+          in: query
+          description: Number of answer types to return
+          schema:
+            type: integer
+        - name: promote
+          in: query
+          description: Answer types to always include
+          schema:
+            type: string
+          example: "News,Videos"
+        - name: textDecorations
+          in: query
+          description: Include formatting markers in text
+          schema:
+            type: boolean
+            default: false
+        - name: textFormat
+          in: query
+          description: Text format
+          schema:
+            type: string
+            enum: [Raw, HTML]
+            default: Raw
+        - name: setLang
+          in: query
+          description: UI language
+          schema:
+            type: string
+          example: "en"
+        - name: cc
+          in: query
+          description: Country code (2-letter)
+          schema:
+            type: string
+          example: "US"
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+              example:
+                _type: "SearchResponse"
+                queryContext:
+                  originalQuery: "machine learning"
+                webPages:
+                  totalEstimatedMatches: 23400000
+                  value:
+                    - name: "Machine Learning | Coursera"
+                      url: "https://www.coursera.org/courses?query=machine%20learning"
+                      snippet: "Learn machine learning from top universities..."
+                      dateLastCrawled: "2024-01-15T00:00:00.0000000Z"
+                relatedSearches:
+                  value:
+                    - text: "machine learning tutorial"
+                      displayText: "machine learning tutorial"
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Quota exceeded
+        '429':
+          description: Rate limit exceeded
+
+  /news/search:
+    get:
+      operationId: newsSearch
+      summary: News search
+      description: Search for news articles
+      tags:
+        - News
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: count
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: mkt
+          in: query
+          schema:
+            type: string
+        - name: freshness
+          in: query
+          schema:
+            type: string
+            enum: [Day, Week, Month]
+        - name: sortBy
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [Date, Relevance]
+        - name: safeSearch
+          in: query
+          schema:
+            type: string
+            enum: [Off, Moderate, Strict]
+      responses:
+        '200':
+          description: News results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/News'
+
+  /images/search:
+    get:
+      operationId: imageSearch
+      summary: Image search
+      description: Search for images
+      tags:
+        - Images
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: count
+          in: query
+          schema:
+            type: integer
+            default: 35
+        - name: offset
+          in: query
+          schema:
+            type: integer
+        - name: mkt
+          in: query
+          schema:
+            type: string
+        - name: safeSearch
+          in: query
+          schema:
+            type: string
+            enum: [Off, Moderate, Strict]
+        - name: size
+          in: query
+          description: Image size filter
+          schema:
+            type: string
+            enum: [Small, Medium, Large, Wallpaper, All]
+        - name: aspect
+          in: query
+          description: Aspect ratio filter
+          schema:
+            type: string
+            enum: [Square, Wide, Tall, All]
+        - name: color
+          in: query
+          description: Color filter
+          schema:
+            type: string
+            enum: [ColorOnly, Monochrome, Black, Blue, Brown, Gray, Green, Orange, Pink, Purple, Red, Teal, White, Yellow]
+        - name: imageType
+          in: query
+          schema:
+            type: string
+            enum: [AnimatedGif, Clipart, Line, Photo, Shopping, Transparent]
+        - name: license
+          in: query
+          description: License filter
+          schema:
+            type: string
+            enum: [Any, Public, Share, ShareCommercially, Modify, ModifyCommercially, All]
+      responses:
+        '200':
+          description: Image results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Images'
+
+  /videos/search:
+    get:
+      operationId: videoSearch
+      summary: Video search
+      description: Search for videos
+      tags:
+        - Videos
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: count
+          in: query
+          schema:
+            type: integer
+            default: 35
+        - name: offset
+          in: query
+          schema:
+            type: integer
+        - name: mkt
+          in: query
+          schema:
+            type: string
+        - name: safeSearch
+          in: query
+          schema:
+            type: string
+            enum: [Off, Moderate, Strict]
+        - name: freshness
+          in: query
+          schema:
+            type: string
+            enum: [Day, Week, Month]
+        - name: resolution
+          in: query
+          schema:
+            type: string
+            enum: [480p, 720p, 1080p, All]
+        - name: videoLength
+          in: query
+          schema:
+            type: string
+            enum: [Short, Medium, Long, All]
+      responses:
+        '200':
+          description: Video results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Videos'
+
+  /suggestions:
+    get:
+      operationId: autosuggest
+      summary: Search suggestions
+      description: Get search query suggestions
+      tags:
+        - Suggestions
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Partial query
+          schema:
+            type: string
+        - name: mkt
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _type:
+                    type: string
+                  queryContext:
+                    type: object
+                    properties:
+                      originalQuery:
+                        type: string
+                  suggestionGroups:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        searchSuggestions:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              url:
+                                type: string
+                              displayText:
+                                type: string
+                              query:
+                                type: string
+                              searchKind:
+                                type: string
