@@ -1,0 +1,835 @@
+openapi: "3.1.0"
+info:
+  title: Reddit JSON API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for Reddit's public JSON endpoints.
+    
+    ## Authentication
+    **None required** - Add `.json` to any Reddit URL
+    
+    ## How It Works
+    Reddit serves JSON for any page by appending `.json`:
+    - `reddit.com/r/programming` → `reddit.com/r/programming.json`
+    - `reddit.com/user/spez` → `reddit.com/user/spez.json`
+    
+    ## ChatGPT Compatible
+    Yes
+    
+    ## Rate Limits
+    - ~60 requests/minute (unofficial)
+    - Set a descriptive User-Agent
+    - May get 429 errors if aggressive
+    
+    ## Caveats
+    - This is unofficial/undocumented
+    - Some endpoints require OAuth for full data
+    - NSFW content filtered without auth
+    - Rate limits are not published
+    
+    ## Official API
+    For production use, consider Reddit's official API:
+    https://www.reddit.com/dev/api/
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+
+servers:
+  - url: https://www.reddit.com
+    description: Reddit (www)
+  - url: https://old.reddit.com
+    description: Reddit (old interface)
+
+components:
+  schemas:
+    Listing:
+      type: object
+      description: Reddit's standard paginated response
+      properties:
+        kind:
+          type: string
+          enum: [Listing]
+        data:
+          type: object
+          properties:
+            after:
+              type: string
+              nullable: true
+              description: Fullname for pagination (next page)
+            before:
+              type: string
+              nullable: true
+              description: Fullname for pagination (previous page)
+            dist:
+              type: integer
+              description: Number of items returned
+            modhash:
+              type: string
+            geo_filter:
+              type: string
+            children:
+              type: array
+              items:
+                oneOf:
+                  - $ref: '#/components/schemas/Post'
+                  - $ref: '#/components/schemas/Comment'
+
+    Post:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [t3]
+          description: t3 = link/post
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              description: Post ID (base36)
+            name:
+              type: string
+              description: Fullname (t3_xxxxx)
+            title:
+              type: string
+            author:
+              type: string
+            subreddit:
+              type: string
+            subreddit_name_prefixed:
+              type: string
+            selftext:
+              type: string
+              description: Post body (text posts)
+            selftext_html:
+              type: string
+              nullable: true
+            url:
+              type: string
+              description: Link URL or self post URL
+            permalink:
+              type: string
+              description: Relative permalink
+            thumbnail:
+              type: string
+            preview:
+              type: object
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      source:
+                        type: object
+                        properties:
+                          url:
+                            type: string
+                          width:
+                            type: integer
+                          height:
+                            type: integer
+                      resolutions:
+                        type: array
+                        items:
+                          type: object
+            score:
+              type: integer
+              description: Upvotes minus downvotes
+            ups:
+              type: integer
+            downs:
+              type: integer
+            upvote_ratio:
+              type: number
+            num_comments:
+              type: integer
+            created:
+              type: number
+              description: Unix timestamp (UTC)
+            created_utc:
+              type: number
+            edited:
+              oneOf:
+                - type: boolean
+                - type: number
+            is_self:
+              type: boolean
+              description: True if text post
+            is_video:
+              type: boolean
+            is_original_content:
+              type: boolean
+            over_18:
+              type: boolean
+              description: NSFW flag
+            spoiler:
+              type: boolean
+            locked:
+              type: boolean
+            stickied:
+              type: boolean
+            archived:
+              type: boolean
+            distinguished:
+              type: string
+              nullable: true
+            link_flair_text:
+              type: string
+              nullable: true
+            author_flair_text:
+              type: string
+              nullable: true
+            domain:
+              type: string
+            gilded:
+              type: integer
+            all_awardings:
+              type: array
+              items:
+                type: object
+            media:
+              type: object
+              nullable: true
+            media_embed:
+              type: object
+            secure_media:
+              type: object
+              nullable: true
+            crosspost_parent_list:
+              type: array
+              items:
+                type: object
+
+    Comment:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [t1]
+          description: t1 = comment
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+              description: Fullname (t1_xxxxx)
+            author:
+              type: string
+            body:
+              type: string
+              description: Comment text (markdown)
+            body_html:
+              type: string
+            score:
+              type: integer
+            ups:
+              type: integer
+            created_utc:
+              type: number
+            edited:
+              oneOf:
+                - type: boolean
+                - type: number
+            parent_id:
+              type: string
+              description: Parent fullname
+            link_id:
+              type: string
+              description: Post fullname
+            subreddit:
+              type: string
+            permalink:
+              type: string
+            depth:
+              type: integer
+            is_submitter:
+              type: boolean
+              description: True if comment author is OP
+            stickied:
+              type: boolean
+            distinguished:
+              type: string
+              nullable: true
+            gilded:
+              type: integer
+            replies:
+              oneOf:
+                - type: string
+                - $ref: '#/components/schemas/Listing'
+
+    Subreddit:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [t5]
+          description: t5 = subreddit
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            display_name:
+              type: string
+            display_name_prefixed:
+              type: string
+            title:
+              type: string
+            public_description:
+              type: string
+            description:
+              type: string
+            description_html:
+              type: string
+            subscribers:
+              type: integer
+            accounts_active:
+              type: integer
+              description: Users online now
+            created_utc:
+              type: number
+            over18:
+              type: boolean
+            url:
+              type: string
+            icon_img:
+              type: string
+            banner_img:
+              type: string
+            header_img:
+              type: string
+              nullable: true
+            community_icon:
+              type: string
+            subreddit_type:
+              type: string
+              enum: [public, private, restricted, gold_restricted, archived]
+
+    User:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [t2]
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            created_utc:
+              type: number
+            link_karma:
+              type: integer
+            comment_karma:
+              type: integer
+            total_karma:
+              type: integer
+            is_gold:
+              type: boolean
+            is_mod:
+              type: boolean
+            verified:
+              type: boolean
+            has_verified_email:
+              type: boolean
+            icon_img:
+              type: string
+            snoovatar_img:
+              type: string
+            subreddit:
+              type: object
+              description: User's profile subreddit
+
+    SearchResults:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [Listing]
+        data:
+          type: object
+          properties:
+            after:
+              type: string
+              nullable: true
+            children:
+              type: array
+              items:
+                $ref: '#/components/schemas/Post'
+
+paths:
+  # ============ SUBREDDIT POSTS ============
+  /r/{subreddit}.json:
+    get:
+      operationId: getSubredditPosts
+      summary: Get subreddit posts
+      description: Returns hot posts from a subreddit
+      tags:
+        - Subreddits
+      parameters:
+        - name: subreddit
+          in: path
+          required: true
+          description: Subreddit name (without r/)
+          schema:
+            type: string
+          example: "programming"
+        - name: limit
+          in: query
+          description: Number of posts (1-100)
+          schema:
+            type: integer
+            default: 25
+            maximum: 100
+        - name: after
+          in: query
+          description: Fullname for pagination
+          schema:
+            type: string
+        - name: before
+          in: query
+          schema:
+            type: string
+        - name: t
+          in: query
+          description: Time filter (for top/controversial)
+          schema:
+            type: string
+            enum: [hour, day, week, month, year, all]
+      responses:
+        '200':
+          description: Subreddit listing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+
+  /r/{subreddit}/{sort}.json:
+    get:
+      operationId: getSubredditPostsSorted
+      summary: Get sorted subreddit posts
+      description: Returns posts sorted by specified criteria
+      tags:
+        - Subreddits
+      parameters:
+        - name: subreddit
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sort
+          in: path
+          required: true
+          description: Sort order
+          schema:
+            type: string
+            enum: [hot, new, top, rising, controversial]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+        - name: t
+          in: query
+          description: Time filter (required for top/controversial)
+          schema:
+            type: string
+            enum: [hour, day, week, month, year, all]
+        - name: after
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sorted posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+
+  # ============ SUBREDDIT INFO ============
+  /r/{subreddit}/about.json:
+    get:
+      operationId: getSubredditAbout
+      summary: Get subreddit info
+      description: Returns subreddit metadata and statistics
+      tags:
+        - Subreddits
+      parameters:
+        - name: subreddit
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subreddit info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subreddit'
+
+  # ============ POST & COMMENTS ============
+  /r/{subreddit}/comments/{post_id}.json:
+    get:
+      operationId: getPostComments
+      summary: Get post with comments
+      description: |
+        Returns a post and its comment tree.
+        Response is an array: [post, comments]
+      tags:
+        - Posts
+      parameters:
+        - name: subreddit
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: post_id
+          in: path
+          required: true
+          description: Post ID (base36, without t3_ prefix)
+          schema:
+            type: string
+          example: "1abc123"
+        - name: sort
+          in: query
+          description: Comment sort order
+          schema:
+            type: string
+            enum: [confidence, top, new, controversial, old, qa]
+            default: confidence
+        - name: limit
+          in: query
+          description: Number of comments
+          schema:
+            type: integer
+        - name: depth
+          in: query
+          description: Maximum comment depth
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Post and comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Listing'
+                minItems: 2
+                maxItems: 2
+
+  # ============ USER ============
+  /user/{username}/about.json:
+    get:
+      operationId: getUserAbout
+      summary: Get user info
+      description: Returns user profile information
+      tags:
+        - Users
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /user/{username}.json:
+    get:
+      operationId: getUserPosts
+      summary: Get user's posts
+      description: Returns posts submitted by user
+      tags:
+        - Users
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+        - name: after
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [hot, new, top, controversial]
+        - name: t
+          in: query
+          schema:
+            type: string
+            enum: [hour, day, week, month, year, all]
+      responses:
+        '200':
+          description: User's posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+
+  /user/{username}/comments.json:
+    get:
+      operationId: getUserComments
+      summary: Get user's comments
+      description: Returns comments made by user
+      tags:
+        - Users
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+        - name: after
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [hot, new, top, controversial]
+      responses:
+        '200':
+          description: User's comments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+
+  # ============ SEARCH ============
+  /search.json:
+    get:
+      operationId: searchReddit
+      summary: Search all of Reddit
+      description: Search posts across all subreddits
+      tags:
+        - Search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+        - name: after
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [relevance, hot, top, new, comments]
+            default: relevance
+        - name: t
+          in: query
+          description: Time filter
+          schema:
+            type: string
+            enum: [hour, day, week, month, year, all]
+            default: all
+        - name: type
+          in: query
+          description: Result type
+          schema:
+            type: string
+            enum: [sr, link, user]
+        - name: restrict_sr
+          in: query
+          description: Restrict to subreddit (use with /r/{sub}/search.json)
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResults'
+
+  /r/{subreddit}/search.json:
+    get:
+      operationId: searchSubreddit
+      summary: Search within subreddit
+      description: Search posts within a specific subreddit
+      tags:
+        - Search
+      parameters:
+        - name: subreddit
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: restrict_sr
+          in: query
+          description: Must be true to restrict to subreddit
+          schema:
+            type: boolean
+            default: true
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [relevance, hot, top, new, comments]
+        - name: t
+          in: query
+          schema:
+            type: string
+            enum: [hour, day, week, month, year, all]
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResults'
+
+  # ============ FRONTPAGE ============
+  /.json:
+    get:
+      operationId: getFrontpage
+      summary: Get frontpage
+      description: Returns Reddit frontpage (r/all equivalent for logged out)
+      tags:
+        - Browse
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+        - name: after
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Frontpage posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+
+  /r/all.json:
+    get:
+      operationId: getAllPosts
+      summary: Get r/all posts
+      description: Returns posts from all subreddits
+      tags:
+        - Browse
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+        - name: after
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: All posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+
+  /r/popular.json:
+    get:
+      operationId: getPopularPosts
+      summary: Get r/popular posts
+      description: Returns popular posts (filtered r/all)
+      tags:
+        - Browse
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+        - name: after
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Popular posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+
+  # ============ MULTI-SUBREDDIT ============
+  /r/{subreddits}.json:
+    get:
+      operationId: getMultiSubreddit
+      summary: Get posts from multiple subreddits
+      description: |
+        Combine multiple subreddits with + separator.
+        Example: /r/python+javascript+rust.json
+      tags:
+        - Browse
+      parameters:
+        - name: subreddits
+          in: path
+          required: true
+          description: Subreddits joined with +
+          schema:
+            type: string
+          example: "python+javascript+rust"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+      responses:
+        '200':
+          description: Combined subreddit posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
