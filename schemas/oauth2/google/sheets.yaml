@@ -1,0 +1,768 @@
+openapi: "3.1.0"
+info:
+  title: Google Sheets API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for Google Sheets API.
+    
+    ## Required Placeholders
+    - `{{CLIENT_ID}}`: Your Google OAuth client ID
+    - `{{CLIENT_SECRET}}`: Your Google OAuth client secret
+    - `{{CALLBACK_URL}}`: Your platform's OAuth callback URL
+    
+    ## Scopes
+    - `https://www.googleapis.com/auth/spreadsheets` - Full Sheets access
+    - `https://www.googleapis.com/auth/spreadsheets.readonly` - Read-only access
+    - `https://www.googleapis.com/auth/drive.file` - Files created/opened by app
+    
+    ## Auth Type
+    OAuth2 Authorization Code
+    
+    ## ChatGPT Compatible
+    Yes
+    
+    ## A1 Notation
+    Ranges use A1 notation: `Sheet1!A1:D10`, `A1:B5`, `Sheet1!A:A`
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+
+servers:
+  - url: https://sheets.googleapis.com/v4
+    description: Google Sheets API v4
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://accounts.google.com/o/oauth2/v2/auth
+          tokenUrl: https://oauth2.googleapis.com/token
+          scopes:
+            https://www.googleapis.com/auth/spreadsheets: Full access to Sheets
+            https://www.googleapis.com/auth/spreadsheets.readonly: Read-only access
+            https://www.googleapis.com/auth/drive.file: Access files created by app
+
+  schemas:
+    Spreadsheet:
+      type: object
+      properties:
+        spreadsheetId:
+          type: string
+          description: Unique spreadsheet identifier
+        properties:
+          $ref: '#/components/schemas/SpreadsheetProperties'
+        sheets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sheet'
+        spreadsheetUrl:
+          type: string
+          description: URL to view spreadsheet
+
+    SpreadsheetProperties:
+      type: object
+      properties:
+        title:
+          type: string
+        locale:
+          type: string
+        timeZone:
+          type: string
+        autoRecalc:
+          type: string
+          enum: [ON_CHANGE, MINUTE, HOUR]
+
+    Sheet:
+      type: object
+      properties:
+        properties:
+          $ref: '#/components/schemas/SheetProperties'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GridData'
+
+    SheetProperties:
+      type: object
+      properties:
+        sheetId:
+          type: integer
+        title:
+          type: string
+        index:
+          type: integer
+        sheetType:
+          type: string
+          enum: [GRID, OBJECT, DATASOURCE]
+        gridProperties:
+          type: object
+          properties:
+            rowCount:
+              type: integer
+            columnCount:
+              type: integer
+            frozenRowCount:
+              type: integer
+            frozenColumnCount:
+              type: integer
+        hidden:
+          type: boolean
+        tabColor:
+          $ref: '#/components/schemas/Color'
+
+    GridData:
+      type: object
+      properties:
+        startRow:
+          type: integer
+        startColumn:
+          type: integer
+        rowData:
+          type: array
+          items:
+            $ref: '#/components/schemas/RowData'
+
+    RowData:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/CellData'
+
+    CellData:
+      type: object
+      properties:
+        userEnteredValue:
+          $ref: '#/components/schemas/ExtendedValue'
+        effectiveValue:
+          $ref: '#/components/schemas/ExtendedValue'
+        formattedValue:
+          type: string
+        userEnteredFormat:
+          $ref: '#/components/schemas/CellFormat'
+        effectiveFormat:
+          $ref: '#/components/schemas/CellFormat'
+        hyperlink:
+          type: string
+        note:
+          type: string
+
+    ExtendedValue:
+      type: object
+      properties:
+        numberValue:
+          type: number
+        stringValue:
+          type: string
+        boolValue:
+          type: boolean
+        formulaValue:
+          type: string
+        errorValue:
+          type: object
+          properties:
+            type:
+              type: string
+            message:
+              type: string
+
+    CellFormat:
+      type: object
+      properties:
+        numberFormat:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [TEXT, NUMBER, PERCENT, CURRENCY, DATE, TIME, DATE_TIME, SCIENTIFIC]
+            pattern:
+              type: string
+        backgroundColor:
+          $ref: '#/components/schemas/Color'
+        textFormat:
+          type: object
+          properties:
+            foregroundColor:
+              $ref: '#/components/schemas/Color'
+            fontFamily:
+              type: string
+            fontSize:
+              type: integer
+            bold:
+              type: boolean
+            italic:
+              type: boolean
+            strikethrough:
+              type: boolean
+            underline:
+              type: boolean
+        horizontalAlignment:
+          type: string
+          enum: [LEFT, CENTER, RIGHT]
+        verticalAlignment:
+          type: string
+          enum: [TOP, MIDDLE, BOTTOM]
+        wrapStrategy:
+          type: string
+          enum: [OVERFLOW_CELL, CLIP, WRAP]
+
+    Color:
+      type: object
+      properties:
+        red:
+          type: number
+        green:
+          type: number
+        blue:
+          type: number
+        alpha:
+          type: number
+
+    ValueRange:
+      type: object
+      properties:
+        range:
+          type: string
+          description: A1 notation range
+        majorDimension:
+          type: string
+          enum: [ROWS, COLUMNS]
+        values:
+          type: array
+          items:
+            type: array
+            items:
+              oneOf:
+                - type: string
+                - type: number
+                - type: boolean
+
+    BatchUpdateResponse:
+      type: object
+      properties:
+        spreadsheetId:
+          type: string
+        replies:
+          type: array
+          items:
+            type: object
+        updatedSpreadsheet:
+          $ref: '#/components/schemas/Spreadsheet'
+
+security:
+  - OAuth2:
+      - https://www.googleapis.com/auth/spreadsheets
+
+paths:
+  /spreadsheets:
+    post:
+      operationId: createSpreadsheet
+      summary: Create a new spreadsheet
+      description: Creates a new blank spreadsheet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                properties:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                    locale:
+                      type: string
+                    timeZone:
+                      type: string
+                sheets:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      properties:
+                        $ref: '#/components/schemas/SheetProperties'
+            examples:
+              simpleCreate:
+                summary: Create with title
+                value:
+                  properties:
+                    title: "My New Spreadsheet"
+              multiSheet:
+                summary: Create with multiple sheets
+                value:
+                  properties:
+                    title: "Budget Tracker"
+                  sheets:
+                    - properties:
+                        title: "Income"
+                    - properties:
+                        title: "Expenses"
+                    - properties:
+                        title: "Summary"
+      responses:
+        '200':
+          description: Created spreadsheet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Spreadsheet'
+
+  /spreadsheets/{spreadsheetId}:
+    get:
+      operationId: getSpreadsheet
+      summary: Get spreadsheet metadata
+      description: Returns spreadsheet properties and sheet metadata
+      parameters:
+        - name: spreadsheetId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ranges
+          in: query
+          description: Ranges to include (A1 notation)
+          schema:
+            type: array
+            items:
+              type: string
+        - name: includeGridData
+          in: query
+          description: Include cell data
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Spreadsheet metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Spreadsheet'
+
+  /spreadsheets/{spreadsheetId}/values/{range}:
+    get:
+      operationId: getSheetValues
+      summary: Read cell values
+      description: Returns values from a range
+      parameters:
+        - name: spreadsheetId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: range
+          in: path
+          required: true
+          description: A1 notation (e.g., "Sheet1!A1:D10")
+          schema:
+            type: string
+        - name: majorDimension
+          in: query
+          description: Row or column major
+          schema:
+            type: string
+            enum: [ROWS, COLUMNS]
+            default: ROWS
+        - name: valueRenderOption
+          in: query
+          description: How to render values
+          schema:
+            type: string
+            enum: [FORMATTED_VALUE, UNFORMATTED_VALUE, FORMULA]
+            default: FORMATTED_VALUE
+        - name: dateTimeRenderOption
+          in: query
+          schema:
+            type: string
+            enum: [SERIAL_NUMBER, FORMATTED_STRING]
+      responses:
+        '200':
+          description: Cell values
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValueRange'
+
+    put:
+      operationId: updateSheetValues
+      summary: Write cell values
+      description: Writes values to a range (overwrites existing)
+      parameters:
+        - name: spreadsheetId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: range
+          in: path
+          required: true
+          description: A1 notation range
+          schema:
+            type: string
+        - name: valueInputOption
+          in: query
+          required: true
+          description: How to interpret input
+          schema:
+            type: string
+            enum: [RAW, USER_ENTERED]
+        - name: includeValuesInResponse
+          in: query
+          schema:
+            type: boolean
+            default: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValueRange'
+            examples:
+              simpleWrite:
+                summary: Write a row
+                value:
+                  values:
+                    - ["Name", "Email", "Phone"]
+                    - ["John Doe", "john@example.com", "555-1234"]
+      responses:
+        '200':
+          description: Update result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  spreadsheetId:
+                    type: string
+                  updatedRange:
+                    type: string
+                  updatedRows:
+                    type: integer
+                  updatedColumns:
+                    type: integer
+                  updatedCells:
+                    type: integer
+
+  /spreadsheets/{spreadsheetId}/values/{range}:append:
+    post:
+      operationId: appendSheetValues
+      summary: Append rows
+      description: Appends values after the last row with data
+      parameters:
+        - name: spreadsheetId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: range
+          in: path
+          required: true
+          description: Range to search for table (e.g., "Sheet1!A:E")
+          schema:
+            type: string
+        - name: valueInputOption
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [RAW, USER_ENTERED]
+        - name: insertDataOption
+          in: query
+          description: How to insert data
+          schema:
+            type: string
+            enum: [OVERWRITE, INSERT_ROWS]
+            default: OVERWRITE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValueRange'
+            examples:
+              appendRows:
+                summary: Append new data rows
+                value:
+                  values:
+                    - ["New Item", 100, "2024-01-15"]
+                    - ["Another Item", 250, "2024-01-16"]
+      responses:
+        '200':
+          description: Append result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  spreadsheetId:
+                    type: string
+                  tableRange:
+                    type: string
+                  updates:
+                    type: object
+                    properties:
+                      updatedRange:
+                        type: string
+                      updatedRows:
+                        type: integer
+                      updatedCells:
+                        type: integer
+
+  /spreadsheets/{spreadsheetId}/values:batchGet:
+    get:
+      operationId: batchGetSheetValues
+      summary: Read multiple ranges
+      description: Returns values from multiple ranges in one request
+      parameters:
+        - name: spreadsheetId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ranges
+          in: query
+          required: true
+          description: Multiple A1 notation ranges
+          schema:
+            type: array
+            items:
+              type: string
+        - name: majorDimension
+          in: query
+          schema:
+            type: string
+            enum: [ROWS, COLUMNS]
+        - name: valueRenderOption
+          in: query
+          schema:
+            type: string
+            enum: [FORMATTED_VALUE, UNFORMATTED_VALUE, FORMULA]
+      responses:
+        '200':
+          description: Multiple value ranges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  spreadsheetId:
+                    type: string
+                  valueRanges:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ValueRange'
+
+  /spreadsheets/{spreadsheetId}/values:batchUpdate:
+    post:
+      operationId: batchUpdateSheetValues
+      summary: Write to multiple ranges
+      description: Updates multiple ranges in one request
+      parameters:
+        - name: spreadsheetId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - valueInputOption
+                - data
+              properties:
+                valueInputOption:
+                  type: string
+                  enum: [RAW, USER_ENTERED]
+                data:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ValueRange'
+                includeValuesInResponse:
+                  type: boolean
+      responses:
+        '200':
+          description: Batch update result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  spreadsheetId:
+                    type: string
+                  totalUpdatedRows:
+                    type: integer
+                  totalUpdatedColumns:
+                    type: integer
+                  totalUpdatedCells:
+                    type: integer
+                  responses:
+                    type: array
+                    items:
+                      type: object
+
+  /spreadsheets/{spreadsheetId}/values/{range}:clear:
+    post:
+      operationId: clearSheetValues
+      summary: Clear cell values
+      description: Clears values from a range (keeps formatting)
+      parameters:
+        - name: spreadsheetId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: range
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Clear result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  spreadsheetId:
+                    type: string
+                  clearedRange:
+                    type: string
+
+  /spreadsheets/{spreadsheetId}:batchUpdate:
+    post:
+      operationId: batchUpdateSpreadsheet
+      summary: Update spreadsheet structure
+      description: |
+        Performs structural updates like adding sheets, formatting cells,
+        creating charts, etc.
+      parameters:
+        - name: spreadsheetId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - requests
+              properties:
+                requests:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      addSheet:
+                        type: object
+                        properties:
+                          properties:
+                            $ref: '#/components/schemas/SheetProperties'
+                      deleteSheet:
+                        type: object
+                        properties:
+                          sheetId:
+                            type: integer
+                      updateSheetProperties:
+                        type: object
+                        properties:
+                          properties:
+                            $ref: '#/components/schemas/SheetProperties'
+                          fields:
+                            type: string
+                      repeatCell:
+                        type: object
+                        description: Apply format to range
+                        properties:
+                          range:
+                            type: object
+                            properties:
+                              sheetId:
+                                type: integer
+                              startRowIndex:
+                                type: integer
+                              endRowIndex:
+                                type: integer
+                              startColumnIndex:
+                                type: integer
+                              endColumnIndex:
+                                type: integer
+                          cell:
+                            $ref: '#/components/schemas/CellData'
+                          fields:
+                            type: string
+                      autoResizeDimensions:
+                        type: object
+                        properties:
+                          dimensions:
+                            type: object
+                            properties:
+                              sheetId:
+                                type: integer
+                              dimension:
+                                type: string
+                                enum: [ROWS, COLUMNS]
+                              startIndex:
+                                type: integer
+                              endIndex:
+                                type: integer
+                      sortRange:
+                        type: object
+                        properties:
+                          range:
+                            type: object
+                          sortSpecs:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                dimensionIndex:
+                                  type: integer
+                                sortOrder:
+                                  type: string
+                                  enum: [ASCENDING, DESCENDING]
+                includeSpreadsheetInResponse:
+                  type: boolean
+            examples:
+              addSheet:
+                summary: Add a new sheet
+                value:
+                  requests:
+                    - addSheet:
+                        properties:
+                          title: "New Sheet"
+              formatHeader:
+                summary: Bold header row
+                value:
+                  requests:
+                    - repeatCell:
+                        range:
+                          sheetId: 0
+                          startRowIndex: 0
+                          endRowIndex: 1
+                        cell:
+                          userEnteredFormat:
+                            textFormat:
+                              bold: true
+                            backgroundColor:
+                              red: 0.9
+                              green: 0.9
+                              blue: 0.9
+                        fields: "userEnteredFormat(textFormat,backgroundColor)"
+      responses:
+        '200':
+          description: Batch update result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchUpdateResponse'
