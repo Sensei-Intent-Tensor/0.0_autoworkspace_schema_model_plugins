@@ -1,0 +1,1154 @@
+openapi: "3.1.0"
+info:
+  title: SendGrid Email API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for SendGrid's Email API v3.
+    
+    ## Required Placeholders
+    - `{{SENDGRID_API_KEY}}`: Your SendGrid API key
+    
+    ## Authentication
+    Bearer token via `Authorization` header
+    
+    ## Key Features
+    - Send transactional & marketing emails
+    - Dynamic templates with handlebars
+    - Scheduled sending
+    - Email validation
+    - Contact management
+    
+    ## ChatGPT Compatible
+    Yes
+    
+    ## Rate Limits
+    - Free: 100 emails/day
+    - Essentials: 100K emails/month
+    - Pro: 1.5M+ emails/month
+    
+    ## Pricing
+    See https://sendgrid.com/pricing/
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+  externalDocs:
+    description: SendGrid API Documentation
+    url: https://docs.sendgrid.com/api-reference
+
+servers:
+  - url: https://api.sendgrid.com/v3
+    description: SendGrid API v3
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        SendGrid API Key as Bearer token.
+        Format: `Authorization: Bearer {{SENDGRID_API_KEY}}`
+
+  schemas:
+    # ============ EMAIL SCHEMAS ============
+    SendMailRequest:
+      type: object
+      required:
+        - personalizations
+        - from
+        - subject
+        - content
+      properties:
+        personalizations:
+          type: array
+          description: Recipients and per-recipient settings
+          minItems: 1
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/Personalization'
+        from:
+          $ref: '#/components/schemas/EmailAddress'
+        reply_to:
+          $ref: '#/components/schemas/EmailAddress'
+        reply_to_list:
+          type: array
+          description: Multiple reply-to addresses
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/EmailAddress'
+        subject:
+          type: string
+          description: Global subject line (can be overridden per personalization)
+          minLength: 1
+        content:
+          type: array
+          description: Email body content
+          items:
+            $ref: '#/components/schemas/Content'
+        attachments:
+          type: array
+          description: File attachments
+          items:
+            $ref: '#/components/schemas/Attachment'
+        template_id:
+          type: string
+          description: SendGrid dynamic template ID
+          example: "d-1234567890abcdef"
+        headers:
+          type: object
+          description: Custom email headers
+          additionalProperties:
+            type: string
+        categories:
+          type: array
+          description: Categories for tracking (max 10)
+          maxItems: 10
+          items:
+            type: string
+        custom_args:
+          type: object
+          description: Custom arguments for webhooks
+          additionalProperties:
+            type: string
+        send_at:
+          type: integer
+          description: Unix timestamp to schedule send (up to 72 hours)
+          example: 1704067200
+        batch_id:
+          type: string
+          description: Batch ID for grouping scheduled sends
+        asm:
+          $ref: '#/components/schemas/ASM'
+        ip_pool_name:
+          type: string
+          description: IP pool for sending
+        mail_settings:
+          $ref: '#/components/schemas/MailSettings'
+        tracking_settings:
+          $ref: '#/components/schemas/TrackingSettings'
+
+    Personalization:
+      type: object
+      required:
+        - to
+      properties:
+        to:
+          type: array
+          description: Primary recipients
+          minItems: 1
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/EmailAddress'
+        cc:
+          type: array
+          description: CC recipients
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/EmailAddress'
+        bcc:
+          type: array
+          description: BCC recipients
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/EmailAddress'
+        subject:
+          type: string
+          description: Subject override for this personalization
+        headers:
+          type: object
+          description: Headers override
+          additionalProperties:
+            type: string
+        substitutions:
+          type: object
+          description: Legacy substitution tags
+          additionalProperties:
+            type: string
+        dynamic_template_data:
+          type: object
+          description: Data for dynamic templates (handlebars)
+          additionalProperties: true
+          example:
+            first_name: "John"
+            order_id: "12345"
+            items:
+              - name: "Widget"
+                price: 9.99
+        custom_args:
+          type: object
+          description: Custom arguments override
+          additionalProperties:
+            type: string
+        send_at:
+          type: integer
+          description: Schedule time override
+
+    EmailAddress:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address
+          example: "user@example.com"
+        name:
+          type: string
+          description: Display name
+          example: "John Doe"
+
+    Content:
+      type: object
+      required:
+        - type
+        - value
+      properties:
+        type:
+          type: string
+          description: MIME type
+          enum: ["text/plain", "text/html"]
+          example: "text/html"
+        value:
+          type: string
+          description: Content body
+          example: "<h1>Hello!</h1><p>Welcome to our service.</p>"
+
+    Attachment:
+      type: object
+      required:
+        - content
+        - filename
+      properties:
+        content:
+          type: string
+          description: Base64-encoded file content
+        type:
+          type: string
+          description: MIME type of attachment
+          example: "application/pdf"
+        filename:
+          type: string
+          description: Filename shown to recipient
+          example: "invoice.pdf"
+        disposition:
+          type: string
+          enum: ["attachment", "inline"]
+          default: "attachment"
+        content_id:
+          type: string
+          description: Content ID for inline images
+
+    ASM:
+      type: object
+      description: Advanced Suppression Manager settings
+      required:
+        - group_id
+      properties:
+        group_id:
+          type: integer
+          description: Unsubscribe group ID
+        groups_to_display:
+          type: array
+          description: Groups shown on unsubscribe page
+          items:
+            type: integer
+
+    MailSettings:
+      type: object
+      properties:
+        bypass_list_management:
+          type: object
+          properties:
+            enable:
+              type: boolean
+              description: Bypass all suppression lists
+        bypass_spam_management:
+          type: object
+          properties:
+            enable:
+              type: boolean
+        bypass_bounce_management:
+          type: object
+          properties:
+            enable:
+              type: boolean
+        bypass_unsubscribe_management:
+          type: object
+          properties:
+            enable:
+              type: boolean
+        footer:
+          type: object
+          properties:
+            enable:
+              type: boolean
+            text:
+              type: string
+            html:
+              type: string
+        sandbox_mode:
+          type: object
+          description: Test without sending
+          properties:
+            enable:
+              type: boolean
+
+    TrackingSettings:
+      type: object
+      properties:
+        click_tracking:
+          type: object
+          properties:
+            enable:
+              type: boolean
+            enable_text:
+              type: boolean
+        open_tracking:
+          type: object
+          properties:
+            enable:
+              type: boolean
+            substitution_tag:
+              type: string
+        subscription_tracking:
+          type: object
+          properties:
+            enable:
+              type: boolean
+            text:
+              type: string
+            html:
+              type: string
+            substitution_tag:
+              type: string
+        ganalytics:
+          type: object
+          description: Google Analytics tracking
+          properties:
+            enable:
+              type: boolean
+            utm_source:
+              type: string
+            utm_medium:
+              type: string
+            utm_term:
+              type: string
+            utm_content:
+              type: string
+            utm_campaign:
+              type: string
+
+    # ============ TEMPLATE SCHEMAS ============
+    Template:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Template ID (starts with d-)
+        name:
+          type: string
+          description: Template name
+        generation:
+          type: string
+          enum: ["legacy", "dynamic"]
+        updated_at:
+          type: string
+          format: date-time
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateVersion'
+
+    TemplateVersion:
+      type: object
+      properties:
+        id:
+          type: string
+        template_id:
+          type: string
+        active:
+          type: integer
+          enum: [0, 1]
+        name:
+          type: string
+        subject:
+          type: string
+        html_content:
+          type: string
+        plain_content:
+          type: string
+        generate_plain_content:
+          type: boolean
+        editor:
+          type: string
+          enum: ["code", "design"]
+        updated_at:
+          type: string
+
+    # ============ CONTACT SCHEMAS ============
+    Contact:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        alternate_emails:
+          type: array
+          items:
+            type: string
+        address_line_1:
+          type: string
+        address_line_2:
+          type: string
+        city:
+          type: string
+        state_province_region:
+          type: string
+        postal_code:
+          type: string
+        country:
+          type: string
+        phone_number:
+          type: string
+        whatsapp:
+          type: string
+        line:
+          type: string
+        facebook:
+          type: string
+        unique_name:
+          type: string
+        custom_fields:
+          type: object
+          additionalProperties:
+            type: string
+        list_ids:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ============ VALIDATION SCHEMAS ============
+    EmailValidation:
+      type: object
+      properties:
+        email:
+          type: string
+        verdict:
+          type: string
+          enum: ["Valid", "Risky", "Invalid"]
+        score:
+          type: number
+          minimum: 0
+          maximum: 1
+        local:
+          type: string
+        host:
+          type: string
+        suggestion:
+          type: string
+        checks:
+          type: object
+          properties:
+            domain:
+              type: object
+              properties:
+                has_valid_address_syntax:
+                  type: boolean
+                has_mx_or_a_record:
+                  type: boolean
+                is_suspected_disposable_address:
+                  type: boolean
+            local_part:
+              type: object
+              properties:
+                is_suspected_role_address:
+                  type: boolean
+            additional:
+              type: object
+              properties:
+                has_known_bounces:
+                  type: boolean
+                has_suspected_bounces:
+                  type: boolean
+
+    Error:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: string
+              field:
+                type: string
+              help:
+                type: string
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ============ SEND EMAIL ============
+  /mail/send:
+    post:
+      operationId: sendEmail
+      summary: Send an email
+      description: |
+        Send a single email to one or more recipients.
+        
+        Supports:
+        - Plain text and HTML content
+        - File attachments
+        - Dynamic templates
+        - Scheduled sending
+        - Tracking (opens, clicks)
+      tags:
+        - Mail Send
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMailRequest'
+            examples:
+              simple:
+                summary: Simple email
+                value:
+                  personalizations:
+                    - to:
+                        - email: "recipient@example.com"
+                          name: "John Doe"
+                  from:
+                    email: "sender@yourdomain.com"
+                    name: "Your Company"
+                  subject: "Hello from SendGrid!"
+                  content:
+                    - type: "text/plain"
+                      value: "This is a test email."
+                    - type: "text/html"
+                      value: "<h1>Hello!</h1><p>This is a test email.</p>"
+              withTemplate:
+                summary: Using dynamic template
+                value:
+                  personalizations:
+                    - to:
+                        - email: "customer@example.com"
+                      dynamic_template_data:
+                        first_name: "Sarah"
+                        order_number: "ORD-12345"
+                        items:
+                          - name: "Blue Widget"
+                            quantity: 2
+                            price: "$19.99"
+                        total: "$39.98"
+                  from:
+                    email: "orders@yourstore.com"
+                    name: "Your Store"
+                  template_id: "d-1234567890abcdef"
+              scheduled:
+                summary: Scheduled send
+                value:
+                  personalizations:
+                    - to:
+                        - email: "user@example.com"
+                  from:
+                    email: "newsletter@company.com"
+                  subject: "Weekly Newsletter"
+                  content:
+                    - type: "text/html"
+                      value: "<h1>This Week's Updates</h1>"
+                  send_at: 1704067200
+              bulkPersonalized:
+                summary: Bulk with personalization
+                value:
+                  personalizations:
+                    - to:
+                        - email: "alice@example.com"
+                      dynamic_template_data:
+                        name: "Alice"
+                        discount: "20%"
+                    - to:
+                        - email: "bob@example.com"
+                      dynamic_template_data:
+                        name: "Bob"
+                        discount: "15%"
+                  from:
+                    email: "promo@store.com"
+                  template_id: "d-discount-template"
+              withAttachment:
+                summary: With attachment
+                value:
+                  personalizations:
+                    - to:
+                        - email: "client@example.com"
+                  from:
+                    email: "invoices@company.com"
+                  subject: "Your Invoice"
+                  content:
+                    - type: "text/html"
+                      value: "<p>Please find your invoice attached.</p>"
+                  attachments:
+                    - content: "SGVsbG8gV29ybGQh"
+                      filename: "invoice.pdf"
+                      type: "application/pdf"
+      responses:
+        '202':
+          description: Email accepted for delivery
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '413':
+          description: Payload too large
+        '429':
+          description: Rate limited
+
+  # ============ TEMPLATES ============
+  /templates:
+    get:
+      operationId: listTemplates
+      summary: List templates
+      description: Retrieve all transactional templates
+      tags:
+        - Templates
+      parameters:
+        - name: generations
+          in: query
+          description: Filter by template generation
+          schema:
+            type: string
+            enum: ["legacy", "dynamic", "legacy,dynamic"]
+            default: "dynamic"
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+        - name: page_token
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of templates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Template'
+                  _metadata:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+
+    post:
+      operationId: createTemplate
+      summary: Create a template
+      description: Create a new transactional template
+      tags:
+        - Templates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: Template name
+                generation:
+                  type: string
+                  enum: ["legacy", "dynamic"]
+                  default: "dynamic"
+            examples:
+              create:
+                value:
+                  name: "Order Confirmation"
+                  generation: "dynamic"
+      responses:
+        '201':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+
+  /templates/{template_id}:
+    get:
+      operationId: getTemplate
+      summary: Get a template
+      description: Retrieve a specific template
+      tags:
+        - Templates
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Template details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+
+    patch:
+      operationId: updateTemplate
+      summary: Update a template
+      description: Update template name
+      tags:
+        - Templates
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Template updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+
+    delete:
+      operationId: deleteTemplate
+      summary: Delete a template
+      description: Delete a transactional template
+      tags:
+        - Templates
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Template deleted
+
+  # ============ TEMPLATE VERSIONS ============
+  /templates/{template_id}/versions:
+    post:
+      operationId: createTemplateVersion
+      summary: Create template version
+      description: Create a new version of a template
+      tags:
+        - Templates
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - subject
+              properties:
+                name:
+                  type: string
+                  description: Version name
+                subject:
+                  type: string
+                  description: Email subject (supports handlebars)
+                html_content:
+                  type: string
+                  description: HTML body (supports handlebars)
+                plain_content:
+                  type: string
+                  description: Plain text body
+                generate_plain_content:
+                  type: boolean
+                  default: true
+                active:
+                  type: integer
+                  enum: [0, 1]
+                  description: Set as active version
+                editor:
+                  type: string
+                  enum: ["code", "design"]
+            examples:
+              create:
+                value:
+                  name: "Version 1"
+                  subject: "Hello {{first_name}}!"
+                  html_content: "<h1>Welcome, {{first_name}}!</h1><p>Thanks for joining.</p>"
+                  active: 1
+      responses:
+        '201':
+          description: Version created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateVersion'
+
+  # ============ EMAIL VALIDATION ============
+  /validations/email:
+    post:
+      operationId: validateEmail
+      summary: Validate an email address
+      description: |
+        Check if an email address is valid and deliverable.
+        
+        Returns:
+        - Verdict (Valid/Risky/Invalid)
+        - Score (0-1)
+        - Checks performed
+        - Suggestions for typos
+      tags:
+        - Validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                source:
+                  type: string
+                  description: Source identifier
+            examples:
+              validate:
+                value:
+                  email: "test@example.com"
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    $ref: '#/components/schemas/EmailValidation'
+              examples:
+                valid:
+                  value:
+                    result:
+                      email: "user@gmail.com"
+                      verdict: "Valid"
+                      score: 0.95
+                      local: "user"
+                      host: "gmail.com"
+                      checks:
+                        domain:
+                          has_valid_address_syntax: true
+                          has_mx_or_a_record: true
+                          is_suspected_disposable_address: false
+                        local_part:
+                          is_suspected_role_address: false
+
+  # ============ CONTACTS ============
+  /marketing/contacts:
+    put:
+      operationId: upsertContacts
+      summary: Add or update contacts
+      description: |
+        Add new contacts or update existing ones.
+        Contacts are matched by email address.
+      tags:
+        - Contacts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                list_ids:
+                  type: array
+                  description: Lists to add contacts to
+                  items:
+                    type: string
+                contacts:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - email
+                    properties:
+                      email:
+                        type: string
+                        format: email
+                      first_name:
+                        type: string
+                      last_name:
+                        type: string
+                      custom_fields:
+                        type: object
+                        additionalProperties:
+                          type: string
+            examples:
+              addContacts:
+                value:
+                  list_ids:
+                    - "abc123-list-id"
+                  contacts:
+                    - email: "new.user@example.com"
+                      first_name: "New"
+                      last_name: "User"
+                    - email: "another@example.com"
+                      first_name: "Another"
+                      last_name: "Person"
+      responses:
+        '202':
+          description: Contacts accepted for processing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
+                    description: Job ID to check status
+
+  /marketing/contacts/search:
+    post:
+      operationId: searchContacts
+      summary: Search contacts
+      description: Search contacts using SGQL query
+      tags:
+        - Contacts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  description: SGQL query string
+                  example: "email LIKE '%@gmail.com'"
+            examples:
+              byDomain:
+                summary: Find by email domain
+                value:
+                  query: "email LIKE '%@company.com'"
+              byName:
+                summary: Find by name
+                value:
+                  query: "first_name = 'John'"
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Contact'
+                  contact_count:
+                    type: integer
+
+  /marketing/contacts/{id}:
+    get:
+      operationId: getContact
+      summary: Get a contact
+      description: Retrieve a specific contact by ID
+      tags:
+        - Contacts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Contact details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+
+  /marketing/contacts:
+    delete:
+      operationId: deleteContacts
+      summary: Delete contacts
+      description: Delete contacts by ID or all contacts
+      tags:
+        - Contacts
+      parameters:
+        - name: ids
+          in: query
+          description: Comma-separated contact IDs
+          schema:
+            type: string
+        - name: delete_all_contacts
+          in: query
+          description: Delete all contacts
+          schema:
+            type: string
+            enum: ["true"]
+      responses:
+        '202':
+          description: Deletion job accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
+
+  # ============ LISTS ============
+  /marketing/lists:
+    get:
+      operationId: listContactLists
+      summary: List all contact lists
+      description: Retrieve all contact lists
+      tags:
+        - Lists
+      parameters:
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: page_token
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of contact lists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        contact_count:
+                          type: integer
+
+    post:
+      operationId: createContactList
+      summary: Create a contact list
+      description: Create a new contact list
+      tags:
+        - Lists
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: List name
+            examples:
+              create:
+                value:
+                  name: "Newsletter Subscribers"
+      responses:
+        '201':
+          description: List created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  contact_count:
+                    type: integer
+
+  /marketing/lists/{id}:
+    delete:
+      operationId: deleteContactList
+      summary: Delete a contact list
+      description: Delete a contact list
+      tags:
+        - Lists
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: delete_contacts
+          in: query
+          description: Also delete contacts in list
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: List deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
