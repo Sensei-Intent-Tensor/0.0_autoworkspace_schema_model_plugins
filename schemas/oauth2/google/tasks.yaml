@@ -1,0 +1,578 @@
+openapi: "3.1.0"
+info:
+  title: Google Tasks API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for Google Tasks API.
+    
+    ## Required Placeholders
+    - `{{CLIENT_ID}}`: Your Google OAuth client ID
+    - `{{CLIENT_SECRET}}`: Your Google OAuth client secret
+    - `{{CALLBACK_URL}}`: Your platform's OAuth callback URL
+    
+    ## Scopes
+    - `https://www.googleapis.com/auth/tasks` - Full tasks access
+    - `https://www.googleapis.com/auth/tasks.readonly` - Read-only access
+    
+    ## Auth Type
+    OAuth2 Authorization Code
+    
+    ## ChatGPT Compatible
+    Yes
+    
+    ## Note
+    Tasks are organized into Task Lists. Each user has a default 
+    list accessible via "@default" as the tasklist ID.
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+
+servers:
+  - url: https://tasks.googleapis.com/tasks/v1
+    description: Google Tasks API v1
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://accounts.google.com/o/oauth2/v2/auth
+          tokenUrl: https://oauth2.googleapis.com/token
+          scopes:
+            https://www.googleapis.com/auth/tasks: Full access to Tasks
+            https://www.googleapis.com/auth/tasks.readonly: Read-only access
+
+  schemas:
+    TaskList:
+      type: object
+      properties:
+        kind:
+          type: string
+          default: "tasks#taskList"
+        id:
+          type: string
+          description: Task list identifier
+        etag:
+          type: string
+          description: ETag for concurrency control
+        title:
+          type: string
+          description: Task list title
+        updated:
+          type: string
+          format: date-time
+          description: Last modification time
+        selfLink:
+          type: string
+          description: URL for this task list
+
+    TaskLists:
+      type: object
+      properties:
+        kind:
+          type: string
+          default: "tasks#taskLists"
+        etag:
+          type: string
+        nextPageToken:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskList'
+
+    Task:
+      type: object
+      properties:
+        kind:
+          type: string
+          default: "tasks#task"
+        id:
+          type: string
+          description: Task identifier
+        etag:
+          type: string
+        title:
+          type: string
+          description: Task title
+        updated:
+          type: string
+          format: date-time
+        selfLink:
+          type: string
+        parent:
+          type: string
+          description: Parent task ID (for subtasks)
+        position:
+          type: string
+          description: Position in list (string for precision)
+        notes:
+          type: string
+          description: Task notes/description
+        status:
+          type: string
+          enum: [needsAction, completed]
+          description: Task status
+        due:
+          type: string
+          format: date-time
+          description: Due date (RFC 3339)
+        completed:
+          type: string
+          format: date-time
+          description: Completion date
+        deleted:
+          type: boolean
+          description: Whether task is deleted
+        hidden:
+          type: boolean
+          description: Whether task is hidden
+        links:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              description:
+                type: string
+              link:
+                type: string
+
+    Tasks:
+      type: object
+      properties:
+        kind:
+          type: string
+          default: "tasks#tasks"
+        etag:
+          type: string
+        nextPageToken:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+
+security:
+  - OAuth2:
+      - https://www.googleapis.com/auth/tasks
+
+paths:
+  # ============ TASK LISTS ============
+  /users/@me/lists:
+    get:
+      operationId: listTaskLists
+      summary: List all task lists
+      description: Returns all task lists for the authenticated user
+      parameters:
+        - name: maxResults
+          in: query
+          description: Max results per page (1-100)
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: pageToken
+          in: query
+          description: Pagination token
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of task lists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskLists'
+
+    post:
+      operationId: createTaskList
+      summary: Create a task list
+      description: Creates a new task list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+                  description: Task list title
+            examples:
+              createList:
+                summary: Create a task list
+                value:
+                  title: "Work Projects"
+      responses:
+        '200':
+          description: Created task list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskList'
+
+  /users/@me/lists/{tasklistId}:
+    get:
+      operationId: getTaskList
+      summary: Get a task list
+      description: Returns a specific task list
+      parameters:
+        - name: tasklistId
+          in: path
+          required: true
+          description: Task list ID (use "@default" for default list)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task list details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskList'
+
+    patch:
+      operationId: updateTaskList
+      summary: Update a task list
+      description: Updates a task list's properties
+      parameters:
+        - name: tasklistId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+            examples:
+              rename:
+                summary: Rename task list
+                value:
+                  title: "Personal Projects"
+      responses:
+        '200':
+          description: Updated task list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskList'
+
+    delete:
+      operationId: deleteTaskList
+      summary: Delete a task list
+      description: Deletes a task list and all its tasks
+      parameters:
+        - name: tasklistId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Task list deleted
+
+  # ============ TASKS ============
+  /lists/{tasklistId}/tasks:
+    get:
+      operationId: listTasks
+      summary: List tasks in a list
+      description: Returns all tasks in a task list
+      parameters:
+        - name: tasklistId
+          in: path
+          required: true
+          description: Task list ID (use "@default" for default list)
+          schema:
+            type: string
+        - name: maxResults
+          in: query
+          description: Max results per page (1-100)
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: pageToken
+          in: query
+          description: Pagination token
+          schema:
+            type: string
+        - name: showCompleted
+          in: query
+          description: Include completed tasks
+          schema:
+            type: boolean
+            default: true
+        - name: showDeleted
+          in: query
+          description: Include deleted tasks
+          schema:
+            type: boolean
+            default: false
+        - name: showHidden
+          in: query
+          description: Include hidden tasks
+          schema:
+            type: boolean
+            default: false
+        - name: dueMin
+          in: query
+          description: Filter by minimum due date (RFC 3339)
+          schema:
+            type: string
+            format: date-time
+        - name: dueMax
+          in: query
+          description: Filter by maximum due date (RFC 3339)
+          schema:
+            type: string
+            format: date-time
+        - name: completedMin
+          in: query
+          description: Filter by minimum completion date
+          schema:
+            type: string
+            format: date-time
+        - name: completedMax
+          in: query
+          description: Filter by maximum completion date
+          schema:
+            type: string
+            format: date-time
+        - name: updatedMin
+          in: query
+          description: Filter by minimum update time
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tasks'
+
+    post:
+      operationId: createTask
+      summary: Create a task
+      description: Creates a new task in the specified list
+      parameters:
+        - name: tasklistId
+          in: path
+          required: true
+          description: Task list ID
+          schema:
+            type: string
+        - name: parent
+          in: query
+          description: Parent task ID (creates subtask)
+          schema:
+            type: string
+        - name: previous
+          in: query
+          description: Previous sibling task ID (for ordering)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+                  description: Task title
+                notes:
+                  type: string
+                  description: Task description
+                due:
+                  type: string
+                  format: date-time
+                  description: Due date (RFC 3339)
+                status:
+                  type: string
+                  enum: [needsAction, completed]
+                  default: needsAction
+            examples:
+              simpleTask:
+                summary: Create simple task
+                value:
+                  title: "Buy groceries"
+              taskWithDue:
+                summary: Task with due date
+                value:
+                  title: "Submit report"
+                  notes: "Q4 financial report for review"
+                  due: "2024-12-31T17:00:00Z"
+              completedTask:
+                summary: Already completed task
+                value:
+                  title: "Send email to client"
+                  status: "completed"
+      responses:
+        '200':
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+  /lists/{tasklistId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+      summary: Get a task
+      description: Returns a specific task
+      parameters:
+        - name: tasklistId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+    patch:
+      operationId: updateTask
+      summary: Update a task
+      description: Updates a task's properties
+      parameters:
+        - name: tasklistId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                notes:
+                  type: string
+                status:
+                  type: string
+                  enum: [needsAction, completed]
+                due:
+                  type: string
+                  format: date-time
+            examples:
+              completeTask:
+                summary: Mark task complete
+                value:
+                  status: "completed"
+              updateDue:
+                summary: Change due date
+                value:
+                  due: "2024-12-15T09:00:00Z"
+              editTask:
+                summary: Update title and notes
+                value:
+                  title: "Updated task title"
+                  notes: "Added more details here"
+      responses:
+        '200':
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+    delete:
+      operationId: deleteTask
+      summary: Delete a task
+      description: Permanently deletes a task
+      parameters:
+        - name: tasklistId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Task deleted
+
+  /lists/{tasklistId}/tasks/{taskId}/move:
+    post:
+      operationId: moveTask
+      summary: Move a task
+      description: Moves a task to a different position or makes it a subtask
+      parameters:
+        - name: tasklistId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: parent
+          in: query
+          description: New parent task ID (makes it a subtask)
+          schema:
+            type: string
+        - name: previous
+          in: query
+          description: Previous sibling task ID (for ordering)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Moved task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+  /lists/{tasklistId}/clear:
+    post:
+      operationId: clearCompletedTasks
+      summary: Clear completed tasks
+      description: Removes all completed tasks from a list
+      parameters:
+        - name: tasklistId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Completed tasks cleared
