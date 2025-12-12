@@ -1,0 +1,894 @@
+openapi: "3.1.0"
+info:
+  title: Wikipedia REST API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for Wikipedia's REST API.
+    
+    ## Authentication
+    **None required** - Completely free and public
+    
+    ## Key Features
+    - Article search
+    - Page summaries & content
+    - On this day events
+    - Random articles
+    - Media files
+    - Page metadata
+    
+    ## ChatGPT Compatible
+    Yes
+    
+    ## Rate Limits
+    - Be respectful: ~200 requests/second max
+    - Set a descriptive User-Agent header
+    - Consider caching responses
+    
+    ## Languages
+    Change `en.wikipedia.org` to other language codes:
+    - `es.wikipedia.org` (Spanish)
+    - `de.wikipedia.org` (German)
+    - `fr.wikipedia.org` (French)
+    - `ja.wikipedia.org` (Japanese)
+    - `zh.wikipedia.org` (Chinese)
+    - See full list: https://meta.wikimedia.org/wiki/List_of_Wikipedias
+    
+    ## Terms of Use
+    Content is under Creative Commons Attribution-ShareAlike License.
+    See: https://en.wikipedia.org/wiki/Wikipedia:Text_of_the_Creative_Commons_Attribution-ShareAlike_4.0_International_License
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+  externalDocs:
+    description: Wikimedia REST API Documentation
+    url: https://en.wikipedia.org/api/rest_v1/
+
+servers:
+  - url: https://en.wikipedia.org/api/rest_v1
+    description: English Wikipedia REST API
+  - url: https://es.wikipedia.org/api/rest_v1
+    description: Spanish Wikipedia
+  - url: https://de.wikipedia.org/api/rest_v1
+    description: German Wikipedia
+  - url: https://fr.wikipedia.org/api/rest_v1
+    description: French Wikipedia
+  - url: https://ja.wikipedia.org/api/rest_v1
+    description: Japanese Wikipedia
+
+components:
+  schemas:
+    # ============ SUMMARY SCHEMAS ============
+    Summary:
+      type: object
+      description: Article summary with key information
+      properties:
+        type:
+          type: string
+          enum: [standard, disambiguation, no-extract, mainpage]
+        title:
+          type: string
+          description: Article title
+        displaytitle:
+          type: string
+          description: Formatted display title (may include HTML)
+        namespace:
+          type: object
+          properties:
+            id:
+              type: integer
+            text:
+              type: string
+        wikibase_item:
+          type: string
+          description: Wikidata item ID (e.g., Q42)
+        titles:
+          type: object
+          properties:
+            canonical:
+              type: string
+            normalized:
+              type: string
+            display:
+              type: string
+        pageid:
+          type: integer
+          description: Unique page identifier
+        thumbnail:
+          $ref: '#/components/schemas/Thumbnail'
+        originalimage:
+          $ref: '#/components/schemas/Image'
+        lang:
+          type: string
+          description: Language code
+        dir:
+          type: string
+          enum: [ltr, rtl]
+          description: Text direction
+        revision:
+          type: string
+          description: Revision ID
+        tid:
+          type: string
+          description: Time-based UUID
+        timestamp:
+          type: string
+          format: date-time
+        description:
+          type: string
+          description: Short Wikidata description
+        description_source:
+          type: string
+          enum: [local, central]
+        content_urls:
+          type: object
+          properties:
+            desktop:
+              type: object
+              properties:
+                page:
+                  type: string
+                revisions:
+                  type: string
+                edit:
+                  type: string
+                talk:
+                  type: string
+            mobile:
+              type: object
+              properties:
+                page:
+                  type: string
+                revisions:
+                  type: string
+                edit:
+                  type: string
+                talk:
+                  type: string
+        extract:
+          type: string
+          description: Plain text summary extract
+        extract_html:
+          type: string
+          description: HTML formatted summary extract
+        coordinates:
+          type: object
+          description: Geographic coordinates (if applicable)
+          properties:
+            lat:
+              type: number
+            lon:
+              type: number
+
+    Thumbnail:
+      type: object
+      properties:
+        source:
+          type: string
+          format: uri
+          description: Thumbnail URL
+        width:
+          type: integer
+        height:
+          type: integer
+
+    Image:
+      type: object
+      properties:
+        source:
+          type: string
+          format: uri
+          description: Full image URL
+        width:
+          type: integer
+        height:
+          type: integer
+
+    # ============ SEARCH SCHEMAS ============
+    SearchResults:
+      type: object
+      properties:
+        pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+
+    SearchResult:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Page ID
+        key:
+          type: string
+          description: URL-safe page key
+        title:
+          type: string
+          description: Page title
+        excerpt:
+          type: string
+          description: Search snippet with matches highlighted
+        matched_title:
+          type: string
+          nullable: true
+        description:
+          type: string
+          description: Short description
+        thumbnail:
+          $ref: '#/components/schemas/Thumbnail'
+
+    # ============ ON THIS DAY SCHEMAS ============
+    OnThisDay:
+      type: object
+      properties:
+        selected:
+          type: array
+          description: Curated selection of events
+          items:
+            $ref: '#/components/schemas/OnThisDayEvent'
+        births:
+          type: array
+          description: Notable births on this day
+          items:
+            $ref: '#/components/schemas/OnThisDayEvent'
+        deaths:
+          type: array
+          description: Notable deaths on this day
+          items:
+            $ref: '#/components/schemas/OnThisDayEvent'
+        events:
+          type: array
+          description: Historical events
+          items:
+            $ref: '#/components/schemas/OnThisDayEvent'
+        holidays:
+          type: array
+          description: Holidays and observances
+          items:
+            $ref: '#/components/schemas/OnThisDayEvent'
+
+    OnThisDayEvent:
+      type: object
+      properties:
+        text:
+          type: string
+          description: Event description
+        year:
+          type: integer
+          description: Year of event (negative for BCE)
+        pages:
+          type: array
+          description: Related Wikipedia articles
+          items:
+            $ref: '#/components/schemas/Summary'
+
+    # ============ PAGE CONTENT SCHEMAS ============
+    MobileSections:
+      type: object
+      description: Mobile-optimized page content
+      properties:
+        lead:
+          type: object
+          properties:
+            id:
+              type: integer
+            revision:
+              type: string
+            lastmodified:
+              type: string
+            displaytitle:
+              type: string
+            normalizedtitle:
+              type: string
+            wikibase_item:
+              type: string
+            description:
+              type: string
+            protection:
+              type: object
+            editable:
+              type: boolean
+            languagecount:
+              type: integer
+            image:
+              type: object
+              properties:
+                file:
+                  type: string
+                urls:
+                  type: object
+            sections:
+              type: array
+              items:
+                $ref: '#/components/schemas/Section'
+        remaining:
+          type: object
+          properties:
+            sections:
+              type: array
+              items:
+                $ref: '#/components/schemas/Section'
+
+    Section:
+      type: object
+      properties:
+        id:
+          type: integer
+        text:
+          type: string
+          description: HTML content
+        toclevel:
+          type: integer
+        line:
+          type: string
+          description: Section heading
+        anchor:
+          type: string
+          description: URL anchor
+
+    # ============ MEDIA SCHEMAS ============
+    MediaList:
+      type: object
+      properties:
+        revision:
+          type: string
+        tid:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaItem'
+
+    MediaItem:
+      type: object
+      properties:
+        title:
+          type: string
+        type:
+          type: string
+          enum: [image, video, audio]
+        section_id:
+          type: integer
+        showInGallery:
+          type: boolean
+        srcset:
+          type: array
+          items:
+            type: object
+            properties:
+              src:
+                type: string
+              scale:
+                type: string
+        caption:
+          type: object
+          properties:
+            html:
+              type: string
+            text:
+              type: string
+
+    # ============ RELATED PAGES ============
+    RelatedPages:
+      type: object
+      properties:
+        pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Summary'
+
+    # ============ FEATURED CONTENT ============
+    FeaturedContent:
+      type: object
+      description: Featured content for a specific date
+      properties:
+        tfa:
+          $ref: '#/components/schemas/Summary'
+          description: Today's featured article
+        mostread:
+          type: object
+          properties:
+            date:
+              type: string
+            articles:
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/Summary'
+                  - type: object
+                    properties:
+                      views:
+                        type: integer
+                      rank:
+                        type: integer
+        image:
+          type: object
+          description: Picture of the day
+          properties:
+            title:
+              type: string
+            thumbnail:
+              $ref: '#/components/schemas/Image'
+            image:
+              $ref: '#/components/schemas/Image'
+            description:
+              type: object
+              properties:
+                html:
+                  type: string
+                text:
+                  type: string
+                lang:
+                  type: string
+        news:
+          type: array
+          description: Current events
+          items:
+            type: object
+            properties:
+              story:
+                type: string
+              links:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Summary'
+        onthisday:
+          type: array
+          items:
+            $ref: '#/components/schemas/OnThisDayEvent'
+
+    # ============ ERROR ============
+    Error:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        method:
+          type: string
+        uri:
+          type: string
+
+paths:
+  # ============ SEARCH ============
+  /page/search/title:
+    get:
+      operationId: searchArticles
+      summary: Search Wikipedia articles
+      description: |
+        Search for Wikipedia articles by title.
+        Returns matching pages with excerpts and thumbnails.
+      tags:
+        - Search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+          example: "Albert Einstein"
+        - name: limit
+          in: query
+          description: Number of results (1-100)
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResults'
+              example:
+                pages:
+                  - id: 736
+                    key: "Albert_Einstein"
+                    title: "Albert Einstein"
+                    description: "German-born theoretical physicist (1879–1955)"
+                    excerpt: "<span class=\"searchmatch\">Albert</span> <span class=\"searchmatch\">Einstein</span> was a German-born theoretical physicist..."
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ============ PAGE SUMMARY ============
+  /page/summary/{title}:
+    get:
+      operationId: getPageSummary
+      summary: Get article summary
+      description: |
+        Returns a summary of a Wikipedia article including:
+        - Plain text and HTML extracts
+        - Thumbnail and original image
+        - Wikidata description
+        - Geographic coordinates (if applicable)
+        - Links to full article
+      tags:
+        - Pages
+      parameters:
+        - name: title
+          in: path
+          required: true
+          description: Article title (use underscores for spaces)
+          schema:
+            type: string
+          example: "Albert_Einstein"
+        - name: redirect
+          in: query
+          description: How to handle redirects
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Article summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Summary'
+        '404':
+          description: Article not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ============ PAGE CONTENT (MOBILE-SECTIONS) ============
+  /page/mobile-sections/{title}:
+    get:
+      operationId: getPageContent
+      summary: Get full article content
+      description: |
+        Returns the full article content in mobile-optimized format.
+        Content is split into sections with HTML.
+      tags:
+        - Pages
+      parameters:
+        - name: title
+          in: path
+          required: true
+          description: Article title
+          schema:
+            type: string
+          example: "Quantum_mechanics"
+        - name: redirect
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Full article content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileSections'
+        '404':
+          description: Article not found
+
+  /page/mobile-sections-lead/{title}:
+    get:
+      operationId: getPageLead
+      summary: Get article lead section
+      description: Returns just the lead/intro section of an article
+      tags:
+        - Pages
+      parameters:
+        - name: title
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lead section content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  revision:
+                    type: string
+                  displaytitle:
+                    type: string
+                  description:
+                    type: string
+                  sections:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Section'
+
+  # ============ MEDIA ============
+  /page/media-list/{title}:
+    get:
+      operationId: getPageMedia
+      summary: Get media files for article
+      description: Returns all images, videos, and audio files in an article
+      tags:
+        - Media
+      parameters:
+        - name: title
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "Solar_System"
+      responses:
+        '200':
+          description: Media files
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaList'
+        '404':
+          description: Article not found
+
+  # ============ RELATED PAGES ============
+  /page/related/{title}:
+    get:
+      operationId: getRelatedPages
+      summary: Get related articles
+      description: Returns articles related to the given article
+      tags:
+        - Pages
+      parameters:
+        - name: title
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "Python_(programming_language)"
+      responses:
+        '200':
+          description: Related pages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelatedPages'
+        '404':
+          description: Article not found
+
+  # ============ RANDOM ============
+  /page/random/summary:
+    get:
+      operationId: getRandomArticle
+      summary: Get random article
+      description: Returns a summary of a random Wikipedia article
+      tags:
+        - Random
+      responses:
+        '200':
+          description: Random article summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Summary'
+
+  /page/random/title:
+    get:
+      operationId: getRandomTitle
+      summary: Get random article title
+      description: Redirects to a random article (returns 303)
+      tags:
+        - Random
+      responses:
+        '303':
+          description: Redirect to random article
+          headers:
+            Location:
+              schema:
+                type: string
+
+  # ============ ON THIS DAY ============
+  /feed/onthisday/{type}/{mm}/{dd}:
+    get:
+      operationId: getOnThisDay
+      summary: Get "On this day" events
+      description: |
+        Returns historical events, births, deaths, and holidays
+        for a specific month and day.
+      tags:
+        - Featured
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: Type of events to retrieve
+          schema:
+            type: string
+            enum: [all, selected, births, deaths, events, holidays]
+          example: "all"
+        - name: mm
+          in: path
+          required: true
+          description: Month (01-12)
+          schema:
+            type: string
+            pattern: "^(0[1-9]|1[0-2])$"
+          example: "07"
+        - name: dd
+          in: path
+          required: true
+          description: Day (01-31)
+          schema:
+            type: string
+            pattern: "^(0[1-9]|[12][0-9]|3[01])$"
+          example: "04"
+      responses:
+        '200':
+          description: On this day events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnThisDay'
+              example:
+                selected:
+                  - text: "The United States Declaration of Independence is ratified"
+                    year: 1776
+                    pages:
+                      - title: "United States Declaration of Independence"
+                        extract: "The Declaration of Independence is the founding document..."
+        '404':
+          description: Invalid date
+
+  # ============ FEATURED CONTENT ============
+  /feed/featured/{yyyy}/{mm}/{dd}:
+    get:
+      operationId: getFeaturedContent
+      summary: Get featured content for date
+      description: |
+        Returns featured content for a specific date:
+        - Today's featured article
+        - Most read articles
+        - Picture of the day
+        - News stories
+        - On this day events
+      tags:
+        - Featured
+      parameters:
+        - name: yyyy
+          in: path
+          required: true
+          description: Year (4 digits)
+          schema:
+            type: string
+            pattern: "^[0-9]{4}$"
+          example: "2024"
+        - name: mm
+          in: path
+          required: true
+          description: Month (01-12)
+          schema:
+            type: string
+            pattern: "^(0[1-9]|1[0-2])$"
+          example: "12"
+        - name: dd
+          in: path
+          required: true
+          description: Day (01-31)
+          schema:
+            type: string
+            pattern: "^(0[1-9]|[12][0-9]|3[01])$"
+          example: "15"
+      responses:
+        '200':
+          description: Featured content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeaturedContent'
+        '404':
+          description: Content not available for date
+
+  # ============ MOST READ ============
+  /feed/most-read/{yyyy}/{mm}/{dd}:
+    get:
+      operationId: getMostRead
+      summary: Get most read articles
+      description: Returns the most read articles for a specific date
+      tags:
+        - Featured
+      parameters:
+        - name: yyyy
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: mm
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: dd
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Most read articles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date:
+                    type: string
+                  articles:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/Summary'
+                        - type: object
+                          properties:
+                            views:
+                              type: integer
+                            rank:
+                              type: integer
+
+  # ============ PAGE METADATA ============
+  /page/title/{title}:
+    get:
+      operationId: getPageMetadata
+      summary: Get page metadata
+      description: Returns basic metadata about a page
+      tags:
+        - Pages
+      parameters:
+        - name: title
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Page metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title:
+                          type: string
+                        page_id:
+                          type: integer
+                        rev:
+                          type: integer
+                        tid:
+                          type: string
+                        namespace:
+                          type: integer
+                        user_id:
+                          type: integer
+                        user_text:
+                          type: string
+                        timestamp:
+                          type: string
+                        comment:
+                          type: string
+                        tags:
+                          type: array
+                          items:
+                            type: string
+                        restrictions:
+                          type: array
+                          items:
+                            type: string
+                        page_language:
+                          type: string
+                        redirect:
+                          type: boolean
