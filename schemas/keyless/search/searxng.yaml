@@ -1,0 +1,483 @@
+openapi: "3.1.0"
+info:
+  title: SearXNG Meta-Search API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for SearXNG, a privacy-respecting meta-search engine.
+    
+    ## What is SearXNG?
+    SearXNG aggregates results from 70+ search engines while protecting 
+    your privacy. It can be self-hosted or accessed via public instances.
+    
+    ## Authentication
+    **None required** - Most public instances are open
+    
+    ## Public Instances
+    Find public instances at: https://searx.space/
+    
+    Popular instances:
+    - https://searx.be
+    - https://search.sapti.me
+    - https://searx.tiekoetter.com
+    - https://search.ononoki.org
+    
+    ## Self-Hosting
+    For production use, consider self-hosting:
+    https://docs.searxng.org/admin/installation.html
+    
+    ## ChatGPT Compatible
+    Yes (use a reliable public instance or self-host)
+    
+    ## Features
+    - Web, images, videos, news, files, IT, science, music search
+    - 70+ search engine sources
+    - No tracking, no ads
+    - Customizable per-query
+    
+    ## Rate Limits
+    Varies by instance. Self-hosted = unlimited.
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+  externalDocs:
+    description: SearXNG Documentation
+    url: https://docs.searxng.org/
+
+servers:
+  - url: https://searx.be
+    description: SearXNG Public Instance (Belgium)
+  - url: https://search.sapti.me
+    description: SearXNG Public Instance
+  - url: https://searx.tiekoetter.com
+    description: SearXNG Public Instance (Germany)
+  - url: http://localhost:8888
+    description: Self-hosted instance
+
+components:
+  schemas:
+    SearchResponse:
+      type: object
+      properties:
+        query:
+          type: string
+          description: The search query
+        number_of_results:
+          type: integer
+          description: Estimated total results
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Result'
+        answers:
+          type: array
+          description: Instant answers
+          items:
+            type: string
+        corrections:
+          type: array
+          description: Spelling corrections
+          items:
+            type: string
+        infoboxes:
+          type: array
+          description: Knowledge graph style boxes
+          items:
+            $ref: '#/components/schemas/Infobox'
+        suggestions:
+          type: array
+          description: Search suggestions
+          items:
+            type: string
+        unresponsive_engines:
+          type: array
+          description: Engines that failed to respond
+          items:
+            type: array
+            items:
+              type: string
+
+    Result:
+      type: object
+      properties:
+        url:
+          type: string
+          description: Result URL
+        title:
+          type: string
+          description: Result title
+        content:
+          type: string
+          description: Snippet/description
+        engine:
+          type: string
+          description: Source search engine
+        engines:
+          type: array
+          description: All engines that returned this result
+          items:
+            type: string
+        positions:
+          type: array
+          description: Position in each engine's results
+          items:
+            type: integer
+        score:
+          type: number
+          description: Relevance score
+        category:
+          type: string
+          description: Result category
+        pretty_url:
+          type: string
+          description: Human-readable URL
+        parsed_url:
+          type: array
+          description: Parsed URL components
+          items:
+            type: string
+        template:
+          type: string
+          description: Result template type
+        is_onion:
+          type: boolean
+          description: True if .onion URL
+        # Image-specific fields
+        img_src:
+          type: string
+          description: Image URL (for image results)
+        thumbnail_src:
+          type: string
+          description: Thumbnail URL
+        img_format:
+          type: string
+          description: Image format
+        resolution:
+          type: string
+          description: Image resolution
+        # Video-specific fields
+        embedded:
+          type: string
+          description: Embedded player HTML
+        length:
+          type: string
+          description: Video duration
+        # News-specific fields
+        publishedDate:
+          type: string
+          description: Publication date
+        # File-specific fields
+        magnetlink:
+          type: string
+          description: Magnet link (for file results)
+        seed:
+          type: integer
+          description: Number of seeders
+        leech:
+          type: integer
+          description: Number of leechers
+        filesize:
+          type: integer
+          description: File size in bytes
+
+    Infobox:
+      type: object
+      properties:
+        infobox:
+          type: string
+          description: Infobox title
+        id:
+          type: string
+        content:
+          type: string
+          description: Main content
+        img_src:
+          type: string
+        urls:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              url:
+                type: string
+        attributes:
+          type: array
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+              value:
+                type: string
+        engine:
+          type: string
+
+paths:
+  /search:
+    get:
+      operationId: search
+      summary: Search across multiple engines
+      description: |
+        Performs a meta-search across configured search engines.
+        
+        ## Categories
+        - `general`: Web search (default)
+        - `images`: Image search
+        - `videos`: Video search  
+        - `news`: News articles
+        - `map`: Maps
+        - `music`: Music
+        - `it`: IT/Programming
+        - `science`: Scientific papers
+        - `files`: Files/Torrents
+        - `social media`: Social media posts
+        
+        ## Engines
+        Popular engines you can enable:
+        - google, bing, duckduckgo, yahoo
+        - wikipedia, wikidata
+        - reddit, stackoverflow
+        - youtube, vimeo
+        - arxiv, google scholar
+        - and 60+ more!
+        
+        ## Time Ranges
+        Filter by time: day, week, month, year
+      tags:
+        - Search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+          example: "python programming tutorial"
+        - name: format
+          in: query
+          required: true
+          description: Response format
+          schema:
+            type: string
+            enum: [json, csv, rss]
+            default: json
+        - name: categories
+          in: query
+          description: Search categories (comma-separated)
+          schema:
+            type: string
+            enum: [general, images, videos, news, map, music, it, science, files, social media]
+            default: general
+          example: "general"
+        - name: engines
+          in: query
+          description: Specific engines to use (comma-separated)
+          schema:
+            type: string
+          example: "google,duckduckgo,bing"
+        - name: language
+          in: query
+          description: Search language
+          schema:
+            type: string
+            default: "auto"
+          example: "en-US"
+        - name: time_range
+          in: query
+          description: Time filter for results
+          schema:
+            type: string
+            enum: ["", "day", "week", "month", "year"]
+        - name: safesearch
+          in: query
+          description: Safe search level
+          schema:
+            type: integer
+            enum: [0, 1, 2]
+            default: 0
+          examples:
+            none:
+              value: 0
+              summary: No filtering
+            moderate:
+              value: 1
+              summary: Moderate filtering
+            strict:
+              value: 2
+              summary: Strict filtering
+        - name: pageno
+          in: query
+          description: Page number (1-indexed)
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+              example:
+                query: "python programming"
+                number_of_results: 1250000
+                results:
+                  - url: "https://www.python.org/"
+                    title: "Welcome to Python.org"
+                    content: "The official home of the Python Programming Language..."
+                    engine: "google"
+                    engines: ["google", "bing", "duckduckgo"]
+                    score: 12.5
+                    category: "general"
+                  - url: "https://en.wikipedia.org/wiki/Python_(programming_language)"
+                    title: "Python (programming language) - Wikipedia"
+                    content: "Python is a high-level, general-purpose programming language..."
+                    engine: "wikipedia"
+                    score: 10.2
+                suggestions:
+                  - "python programming tutorial"
+                  - "python programming for beginners"
+                infoboxes:
+                  - infobox: "Python"
+                    content: "Python is a high-level programming language..."
+                    img_src: "https://upload.wikimedia.org/python-logo.png"
+        '429':
+          description: Rate limited
+        '503':
+          description: Service unavailable
+
+    post:
+      operationId: searchPost
+      summary: Search (POST method)
+      description: |
+        Same as GET but via POST. Useful for longer queries or 
+        when you want to avoid query parameters in logs.
+      tags:
+        - Search
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - q
+                - format
+              properties:
+                q:
+                  type: string
+                  description: Search query
+                format:
+                  type: string
+                  enum: [json, csv, rss]
+                  default: json
+                categories:
+                  type: string
+                engines:
+                  type: string
+                language:
+                  type: string
+                time_range:
+                  type: string
+                safesearch:
+                  type: integer
+                pageno:
+                  type: integer
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+
+  /config:
+    get:
+      operationId: getConfig
+      summary: Get instance configuration
+      description: Returns the instance's available engines, categories, and settings
+      tags:
+        - Meta
+      responses:
+        '200':
+          description: Instance configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    items:
+                      type: string
+                  engines:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        shortcut:
+                          type: string
+                        categories:
+                          type: array
+                          items:
+                            type: string
+                        enabled:
+                          type: boolean
+                  plugins:
+                    type: array
+                    items:
+                      type: object
+                  instance_name:
+                    type: string
+                  locales:
+                    type: object
+                  default_locale:
+                    type: string
+                  autocomplete:
+                    type: string
+                  safe_search:
+                    type: integer
+                  default_theme:
+                    type: string
+                  version:
+                    type: string
+                  brand:
+                    type: object
+                  doi_resolvers:
+                    type: array
+                    items:
+                      type: string
+
+  /autocomplete:
+    get:
+      operationId: autocomplete
+      summary: Get search suggestions
+      description: Returns autocomplete suggestions for a partial query
+      tags:
+        - Search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Partial search query
+          schema:
+            type: string
+          example: "python pro"
+      responses:
+        '200':
+          description: Autocomplete suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+              example:
+                - "python programming"
+                - "python projects"
+                - "python programming tutorial"
+                - "python programming language"
