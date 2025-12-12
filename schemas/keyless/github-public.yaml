@@ -1,0 +1,1728 @@
+openapi: "3.1.0"
+info:
+  title: GitHub Public API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for GitHub's public API endpoints.
+    
+    ## Authentication
+    **None required** for public data. However, unauthenticated
+    requests are rate-limited to 60/hour per IP.
+    
+    ## Features
+    - Public repositories
+    - User profiles
+    - Public gists
+    - Repository contents
+    - Commits & branches
+    - Issues & pull requests (public repos)
+    - Search (repos, users, code)
+    
+    ## ChatGPT Compatible
+    Yes
+    
+    ## Rate Limits
+    - Unauthenticated: 60 requests/hour per IP
+    - Authenticated: 5,000 requests/hour (use API key schema)
+    
+    ## Note
+    For higher rate limits or private repo access, use the
+    authenticated GitHub API with a Personal Access Token.
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+  externalDocs:
+    description: GitHub REST API Documentation
+    url: https://docs.github.com/en/rest
+
+servers:
+  - url: https://api.github.com
+    description: GitHub API
+
+components:
+  schemas:
+    # ============ USER SCHEMAS ============
+    User:
+      type: object
+      properties:
+        login:
+          type: string
+          description: Username
+          example: "octocat"
+        id:
+          type: integer
+          example: 1
+        node_id:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        gravatar_id:
+          type: string
+        url:
+          type: string
+          format: uri
+        html_url:
+          type: string
+          format: uri
+          description: Profile URL
+        followers_url:
+          type: string
+          format: uri
+        following_url:
+          type: string
+        gists_url:
+          type: string
+        starred_url:
+          type: string
+        repos_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum: [User, Organization, Bot]
+        site_admin:
+          type: boolean
+        name:
+          type: string
+          nullable: true
+          description: Display name
+        company:
+          type: string
+          nullable: true
+        blog:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        hireable:
+          type: boolean
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+        twitter_username:
+          type: string
+          nullable: true
+        public_repos:
+          type: integer
+        public_gists:
+          type: integer
+        followers:
+          type: integer
+        following:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SimpleUser:
+      type: object
+      properties:
+        login:
+          type: string
+        id:
+          type: integer
+        avatar_url:
+          type: string
+        html_url:
+          type: string
+        type:
+          type: string
+
+    # ============ REPOSITORY SCHEMAS ============
+    Repository:
+      type: object
+      properties:
+        id:
+          type: integer
+        node_id:
+          type: string
+        name:
+          type: string
+          description: Repository name
+          example: "Hello-World"
+        full_name:
+          type: string
+          description: Full name (owner/repo)
+          example: "octocat/Hello-World"
+        owner:
+          $ref: '#/components/schemas/SimpleUser'
+        private:
+          type: boolean
+        html_url:
+          type: string
+          format: uri
+          description: Repository URL
+        description:
+          type: string
+          nullable: true
+        fork:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pushed_at:
+          type: string
+          format: date-time
+        homepage:
+          type: string
+          nullable: true
+        size:
+          type: integer
+          description: Size in KB
+        stargazers_count:
+          type: integer
+        watchers_count:
+          type: integer
+        language:
+          type: string
+          nullable: true
+          description: Primary language
+        forks_count:
+          type: integer
+        open_issues_count:
+          type: integer
+        default_branch:
+          type: string
+          example: "main"
+        topics:
+          type: array
+          items:
+            type: string
+        visibility:
+          type: string
+          enum: [public, private, internal]
+        license:
+          type: object
+          nullable: true
+          properties:
+            key:
+              type: string
+            name:
+              type: string
+            spdx_id:
+              type: string
+        archived:
+          type: boolean
+        disabled:
+          type: boolean
+        has_issues:
+          type: boolean
+        has_projects:
+          type: boolean
+        has_wiki:
+          type: boolean
+        has_pages:
+          type: boolean
+        has_downloads:
+          type: boolean
+        has_discussions:
+          type: boolean
+
+    # ============ CONTENT SCHEMAS ============
+    Content:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [file, dir, symlink, submodule]
+        name:
+          type: string
+        path:
+          type: string
+        sha:
+          type: string
+        size:
+          type: integer
+        url:
+          type: string
+        html_url:
+          type: string
+        git_url:
+          type: string
+        download_url:
+          type: string
+          nullable: true
+        content:
+          type: string
+          description: Base64-encoded content (for files)
+        encoding:
+          type: string
+          enum: [base64]
+
+    # ============ COMMIT SCHEMAS ============
+    Commit:
+      type: object
+      properties:
+        sha:
+          type: string
+          description: Commit SHA
+        node_id:
+          type: string
+        url:
+          type: string
+        html_url:
+          type: string
+        author:
+          $ref: '#/components/schemas/SimpleUser'
+        committer:
+          $ref: '#/components/schemas/SimpleUser'
+        commit:
+          type: object
+          properties:
+            message:
+              type: string
+              description: Commit message
+            author:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                date:
+                  type: string
+                  format: date-time
+            committer:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                date:
+                  type: string
+                  format: date-time
+            tree:
+              type: object
+              properties:
+                sha:
+                  type: string
+                url:
+                  type: string
+        parents:
+          type: array
+          items:
+            type: object
+            properties:
+              sha:
+                type: string
+              url:
+                type: string
+
+    # ============ BRANCH SCHEMA ============
+    Branch:
+      type: object
+      properties:
+        name:
+          type: string
+        commit:
+          type: object
+          properties:
+            sha:
+              type: string
+            url:
+              type: string
+        protected:
+          type: boolean
+
+    # ============ ISSUE SCHEMAS ============
+    Issue:
+      type: object
+      properties:
+        id:
+          type: integer
+        node_id:
+          type: string
+        url:
+          type: string
+        html_url:
+          type: string
+        number:
+          type: integer
+          description: Issue number
+        state:
+          type: string
+          enum: [open, closed]
+        title:
+          type: string
+        body:
+          type: string
+          nullable: true
+        user:
+          $ref: '#/components/schemas/SimpleUser'
+        labels:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              color:
+                type: string
+              description:
+                type: string
+        assignee:
+          $ref: '#/components/schemas/SimpleUser'
+        assignees:
+          type: array
+          items:
+            $ref: '#/components/schemas/SimpleUser'
+        milestone:
+          type: object
+          nullable: true
+          properties:
+            title:
+              type: string
+            number:
+              type: integer
+            state:
+              type: string
+        locked:
+          type: boolean
+        comments:
+          type: integer
+        pull_request:
+          type: object
+          nullable: true
+          description: Present if this is a PR
+          properties:
+            url:
+              type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        closed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    # ============ GIST SCHEMAS ============
+    Gist:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+        html_url:
+          type: string
+        files:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              filename:
+                type: string
+              type:
+                type: string
+              language:
+                type: string
+              raw_url:
+                type: string
+              size:
+                type: integer
+              content:
+                type: string
+        public:
+          type: boolean
+        description:
+          type: string
+          nullable: true
+        comments:
+          type: integer
+        owner:
+          $ref: '#/components/schemas/SimpleUser'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ============ SEARCH SCHEMAS ============
+    SearchResult:
+      type: object
+      properties:
+        total_count:
+          type: integer
+        incomplete_results:
+          type: boolean
+        items:
+          type: array
+          items: {}
+
+    # ============ RELEASE SCHEMA ============
+    Release:
+      type: object
+      properties:
+        id:
+          type: integer
+        tag_name:
+          type: string
+          description: Git tag
+        name:
+          type: string
+          nullable: true
+        body:
+          type: string
+          nullable: true
+          description: Release notes
+        draft:
+          type: boolean
+        prerelease:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        published_at:
+          type: string
+          format: date-time
+        author:
+          $ref: '#/components/schemas/SimpleUser'
+        html_url:
+          type: string
+        tarball_url:
+          type: string
+        zipball_url:
+          type: string
+        assets:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              size:
+                type: integer
+              download_count:
+                type: integer
+              browser_download_url:
+                type: string
+
+    # ============ README SCHEMA ============
+    Readme:
+      type: object
+      properties:
+        type:
+          type: string
+        name:
+          type: string
+        path:
+          type: string
+        sha:
+          type: string
+        size:
+          type: integer
+        url:
+          type: string
+        html_url:
+          type: string
+        download_url:
+          type: string
+        content:
+          type: string
+          description: Base64-encoded content
+        encoding:
+          type: string
+
+paths:
+  # ============ USERS ============
+  /users/{username}:
+    get:
+      operationId: getUser
+      summary: Get a user
+      description: Get public profile information for a user
+      tags:
+        - Users
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "octocat"
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+
+  /users/{username}/repos:
+    get:
+      operationId: listUserRepos
+      summary: List user repositories
+      description: Get public repositories for a user
+      tags:
+        - Users
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: Repository type
+          schema:
+            type: string
+            enum: [all, owner, member]
+            default: owner
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [created, updated, pushed, full_name]
+            default: full_name
+        - name: direction
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+        - name: per_page
+          in: query
+          description: Results per page (max 100)
+          schema:
+            type: integer
+            default: 30
+            maximum: 100
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of repositories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Repository'
+
+  /users/{username}/followers:
+    get:
+      operationId: listUserFollowers
+      summary: List followers
+      description: Get users following this user
+      tags:
+        - Users
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of followers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SimpleUser'
+
+  /users/{username}/following:
+    get:
+      operationId: listUserFollowing
+      summary: List following
+      description: Get users this user follows
+      tags:
+        - Users
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SimpleUser'
+
+  /users/{username}/gists:
+    get:
+      operationId: listUserGists
+      summary: List user gists
+      description: Get public gists for a user
+      tags:
+        - Gists
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: since
+          in: query
+          description: Only gists updated after this time
+          schema:
+            type: string
+            format: date-time
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of gists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Gist'
+
+  # ============ REPOSITORIES ============
+  /repos/{owner}/{repo}:
+    get:
+      operationId: getRepository
+      summary: Get a repository
+      description: Get information about a public repository
+      tags:
+        - Repositories
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "octocat"
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "Hello-World"
+      responses:
+        '200':
+          description: Repository information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Repository'
+        '404':
+          description: Repository not found
+
+  /repos/{owner}/{repo}/contents/{path}:
+    get:
+      operationId: getRepoContents
+      summary: Get repository contents
+      description: |
+        Get contents of a file or directory.
+        For files, content is Base64-encoded.
+      tags:
+        - Repositories
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: path
+          required: true
+          description: Path to file or directory
+          schema:
+            type: string
+          examples:
+            root:
+              value: ""
+            readme:
+              value: "README.md"
+            subdir:
+              value: "src/main.js"
+        - name: ref
+          in: query
+          description: Branch, tag, or commit SHA
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File or directory contents
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Content'
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/Content'
+
+  /repos/{owner}/{repo}/readme:
+    get:
+      operationId: getReadme
+      summary: Get README
+      description: Get the README file for a repository
+      tags:
+        - Repositories
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ref
+          in: query
+          description: Branch or tag
+          schema:
+            type: string
+      responses:
+        '200':
+          description: README content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Readme'
+
+  /repos/{owner}/{repo}/commits:
+    get:
+      operationId: listCommits
+      summary: List commits
+      description: Get commits for a repository
+      tags:
+        - Repositories
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sha
+          in: query
+          description: Branch name or commit SHA
+          schema:
+            type: string
+        - name: path
+          in: query
+          description: Only commits containing this path
+          schema:
+            type: string
+        - name: author
+          in: query
+          description: GitHub username or email
+          schema:
+            type: string
+        - name: since
+          in: query
+          description: Commits after this date
+          schema:
+            type: string
+            format: date-time
+        - name: until
+          in: query
+          description: Commits before this date
+          schema:
+            type: string
+            format: date-time
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of commits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Commit'
+
+  /repos/{owner}/{repo}/commits/{ref}:
+    get:
+      operationId: getCommit
+      summary: Get a commit
+      description: Get a specific commit by SHA or ref
+      tags:
+        - Repositories
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ref
+          in: path
+          required: true
+          description: Commit SHA, branch, or tag
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Commit details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Commit'
+
+  /repos/{owner}/{repo}/branches:
+    get:
+      operationId: listBranches
+      summary: List branches
+      description: Get all branches for a repository
+      tags:
+        - Repositories
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of branches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Branch'
+
+  /repos/{owner}/{repo}/branches/{branch}:
+    get:
+      operationId: getBranch
+      summary: Get a branch
+      description: Get details for a specific branch
+      tags:
+        - Repositories
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: branch
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Branch details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Branch'
+
+  /repos/{owner}/{repo}/issues:
+    get:
+      operationId: listIssues
+      summary: List issues
+      description: Get issues for a repository
+      tags:
+        - Issues
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [open, closed, all]
+            default: open
+        - name: labels
+          in: query
+          description: Comma-separated label names
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [created, updated, comments]
+            default: created
+        - name: direction
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: since
+          in: query
+          description: Only issues updated after this time
+          schema:
+            type: string
+            format: date-time
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of issues
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Issue'
+
+  /repos/{owner}/{repo}/issues/{issue_number}:
+    get:
+      operationId: getIssue
+      summary: Get an issue
+      description: Get a specific issue by number
+      tags:
+        - Issues
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: issue_number
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Issue details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+
+  /repos/{owner}/{repo}/releases:
+    get:
+      operationId: listReleases
+      summary: List releases
+      description: Get releases for a repository
+      tags:
+        - Releases
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of releases
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Release'
+
+  /repos/{owner}/{repo}/releases/latest:
+    get:
+      operationId: getLatestRelease
+      summary: Get latest release
+      description: Get the latest published release
+      tags:
+        - Releases
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Latest release
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Release'
+
+  /repos/{owner}/{repo}/releases/tags/{tag}:
+    get:
+      operationId: getReleaseByTag
+      summary: Get release by tag
+      description: Get a release by its tag name
+      tags:
+        - Releases
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tag
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "v1.0.0"
+      responses:
+        '200':
+          description: Release details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Release'
+
+  /repos/{owner}/{repo}/stargazers:
+    get:
+      operationId: listStargazers
+      summary: List stargazers
+      description: Get users who starred this repository
+      tags:
+        - Repositories
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of stargazers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SimpleUser'
+
+  /repos/{owner}/{repo}/forks:
+    get:
+      operationId: listForks
+      summary: List forks
+      description: Get forks of this repository
+      tags:
+        - Repositories
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [newest, oldest, stargazers, watchers]
+            default: newest
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of forks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Repository'
+
+  /repos/{owner}/{repo}/contributors:
+    get:
+      operationId: listContributors
+      summary: List contributors
+      description: Get contributors to this repository
+      tags:
+        - Repositories
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of contributors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/SimpleUser'
+                    - type: object
+                      properties:
+                        contributions:
+                          type: integer
+
+  /repos/{owner}/{repo}/languages:
+    get:
+      operationId: listLanguages
+      summary: List languages
+      description: Get programming languages used in repository
+      tags:
+        - Repositories
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Languages with byte counts
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+              example:
+                JavaScript: 150000
+                TypeScript: 50000
+                CSS: 10000
+
+  /repos/{owner}/{repo}/topics:
+    get:
+      operationId: listTopics
+      summary: List topics
+      description: Get topics for a repository
+      tags:
+        - Repositories
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Repository topics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  names:
+                    type: array
+                    items:
+                      type: string
+
+  # ============ GISTS ============
+  /gists/public:
+    get:
+      operationId: listPublicGists
+      summary: List public gists
+      description: Get all public gists (paginated)
+      tags:
+        - Gists
+      parameters:
+        - name: since
+          in: query
+          description: Only gists updated after this time
+          schema:
+            type: string
+            format: date-time
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of public gists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Gist'
+
+  /gists/{gist_id}:
+    get:
+      operationId: getGist
+      summary: Get a gist
+      description: Get a specific gist by ID
+      tags:
+        - Gists
+      parameters:
+        - name: gist_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Gist details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gist'
+
+  # ============ SEARCH ============
+  /search/repositories:
+    get:
+      operationId: searchRepositories
+      summary: Search repositories
+      description: |
+        Search repositories by keywords.
+        
+        Query syntax examples:
+        - `language:javascript stars:>1000`
+        - `user:octocat`
+        - `topic:react`
+        - `created:>2023-01-01`
+      tags:
+        - Search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+          examples:
+            simple:
+              value: "tetris"
+            withFilters:
+              value: "language:python stars:>100"
+            byUser:
+              value: "user:octocat"
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [stars, forks, help-wanted-issues, updated]
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+            maximum: 100
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SearchResult'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Repository'
+
+  /search/users:
+    get:
+      operationId: searchUsers
+      summary: Search users
+      description: Search users by keywords
+      tags:
+        - Search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+          examples:
+            byName:
+              value: "tom"
+            byLocation:
+              value: "location:san francisco"
+            byFollowers:
+              value: "followers:>1000"
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [followers, repositories, joined]
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SearchResult'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+
+  /search/code:
+    get:
+      operationId: searchCode
+      summary: Search code
+      description: |
+        Search for code in repositories.
+        Note: Must include at least one search term.
+      tags:
+        - Search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: |
+            Search query. Must include search term.
+            Examples:
+            - `addClass in:file language:js`
+            - `filename:package.json express`
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [indexed]
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResult'
+
+  /search/issues:
+    get:
+      operationId: searchIssues
+      summary: Search issues and PRs
+      description: Search issues and pull requests
+      tags:
+        - Search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: |
+            Search query. Examples:
+            - `repo:octocat/Hello-World is:open`
+            - `label:bug state:open`
+            - `author:octocat is:pr`
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [comments, reactions, reactions-+1, reactions--1, reactions-smile, reactions-thinking_face, reactions-heart, reactions-tada, interactions, created, updated]
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SearchResult'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Issue'
+
+  # ============ RATE LIMIT ============
+  /rate_limit:
+    get:
+      operationId: getRateLimit
+      summary: Get rate limit status
+      description: Check your current rate limit status
+      tags:
+        - Meta
+      responses:
+        '200':
+          description: Rate limit status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resources:
+                    type: object
+                    properties:
+                      core:
+                        type: object
+                        properties:
+                          limit:
+                            type: integer
+                          remaining:
+                            type: integer
+                          reset:
+                            type: integer
+                            description: Unix timestamp
+                          used:
+                            type: integer
+                      search:
+                        type: object
+                        properties:
+                          limit:
+                            type: integer
+                          remaining:
+                            type: integer
+                          reset:
+                            type: integer
+                          used:
+                            type: integer
+                  rate:
+                    type: object
+                    properties:
+                      limit:
+                        type: integer
+                      remaining:
+                        type: integer
+                      reset:
+                        type: integer
+                      used:
+                        type: integer
