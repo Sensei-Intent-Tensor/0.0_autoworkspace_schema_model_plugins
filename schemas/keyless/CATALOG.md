@@ -33,11 +33,11 @@ This document catalogs public APIs available without authentication, organized b
 
 | API | Description | Auth | Status |
 |-----|-------------|------|--------|
-| DuckDuckGo Instant | Instant answers, abstracts | None | ⬜ |
+| DuckDuckGo Instant | Instant answers, abstracts | None | ✅ |
 | DuckDuckGo HTML | Search results (scrape) | None ⚠️ | ⬜ |
-| SearXNG | Meta-search (self-host) | None | ⬜ |
-| Google Custom Search | Web search | 🔑 Free tier | ⬜ |
-| Bing Search | Web search | 🔑 Free tier | ⬜ |
+| SearXNG | Meta-search (self-host) | None | ✅ |
+| Google Custom Search | Web search | 🔑 Free tier | ✅ |
+| Bing Search | Web search | 🔑 Free tier | ✅ |
 
 ---
 
@@ -70,8 +70,8 @@ This document catalogs public APIs available without authentication, organized b
 
 | API | Description | Auth | Status |
 |-----|-------------|------|--------|
-| Reddit (.json) | Posts, comments, subreddits | None ⚠️ | ⬜ |
-| Hacker News | Tech news, comments | None | ⬜ |
+| Reddit (.json) | Posts, comments, subreddits | None ⚠️ | ✅ |
+| Hacker News | Tech news, comments | None | ✅ |
 | Lobsters | Tech news | None | ⬜ |
 | Mastodon | Public toots, trends | None | ⬜ |
 | Lemmy | Federated Reddit alternative | None | ⬜ |
@@ -85,7 +85,7 @@ This document catalogs public APIs available without authentication, organized b
 
 | API | Description | Auth | Status |
 |-----|-------------|------|--------|
-| GitHub Public | Repos, users, gists | None (60/hr) | ⬜ |
+| GitHub Public | Repos, users, gists | None (60/hr) | ✅ |
 | GitLab Public | Projects, users | None | ⬜ |
 | NPM Registry | Package info | None | ⬜ |
 | PyPI | Python packages | None | ⬜ |
@@ -145,8 +145,8 @@ This document catalogs public APIs available without authentication, organized b
 |-----|-------------|------|--------|
 | NewsAPI | News aggregation | 🔑 Free | ⬜ |
 | GNews | Google News | 🔑 Free | ⬜ |
-| Hacker News | Tech news | None | ⬜ |
-| Reddit (.json) | Subreddit feeds | None ⚠️ | ⬜ |
+| Hacker News | Tech news | None | ✅ |
+| Reddit (.json) | Subreddit feeds | None ⚠️ | ✅ |
 | RSS Feeds | Any RSS source | None | ⬜ |
 
 ---
@@ -188,113 +188,34 @@ This document catalogs public APIs available without authentication, organized b
 
 ---
 
-## 📊 Priority Build Order
+## 📊 Completion Summary
 
-### Phase 1: High-Value Keyless (Build Now)
-1. ⬜ Reddit JSON API
-2. ⬜ Hacker News API  
-3. ⬜ DuckDuckGo Instant
-4. ⬜ GitHub Public API
-5. ⬜ Nominatim (OpenStreetMap)
-
-### Phase 2: Entertainment & Reference
-6. ⬜ Open Library
-7. ⬜ iTunes Search
-8. ⬜ TVMaze
-9. ⬜ PokéAPI
-10. ⬜ CoinGecko
-
-### Phase 3: Developer Tools
-11. ⬜ NPM Registry
-12. ⬜ PyPI
-13. ⬜ StackExchange
-14. ⬜ JSONPlaceholder
-
-### Phase 4: Free-Tier API Keys
-15. ⬜ Google Custom Search
-16. ⬜ YouTube Data API
-17. ⬜ TMDB
-18. ⬜ Alpha Vantage
+| Category | Complete | Total | Progress |
+|----------|----------|-------|----------|
+| Reference & Knowledge | 1 | 8 | 12% |
+| Search Engines | 4 | 5 | 80% |
+| Maps & Location | 0 | 7 | 0% |
+| Weather & Environment | 1 | 4 | 25% |
+| Social Platforms | 2 | 8 | 25% |
+| Developer Platforms | 1 | 7 | 14% |
+| Media & Entertainment | 0 | 8 | 0% |
+| Games & Fun | 0 | 9 | 0% |
+| Finance & Crypto | 0 | 6 | 0% |
+| News & Feeds | 2 | 5 | 40% |
+| Utilities | 0 | 6 | 0% |
+| Geo & Country Data | 1 | 4 | 25% |
+| Science & Data | 0 | 6 | 0% |
+| **TOTAL** | **12** | **83** | **14%** |
 
 ---
 
-## Folder Structure
-
-```
-/schemas/keyless/
-├── README.md
-├── CATALOG.md                    # This file
-│
-├── /search/
-│   ├── duckduckgo.yaml
-│   └── searxng.yaml
-│
-├── /social/
-│   ├── reddit.yaml
-│   ├── hackernews.yaml
-│   ├── mastodon.yaml
-│   └── lemmy.yaml
-│
-├── /maps/
-│   ├── nominatim.yaml
-│   ├── overpass.yaml
-│   └── ip-api.yaml
-│
-├── /weather/
-│   └── open-meteo.yaml          # ✅ Complete
-│
-├── /reference/
-│   ├── wikipedia/               # ✅ Complete
-│   ├── open-library.yaml
-│   └── dictionary.yaml
-│
-├── /developer/
-│   ├── github-public.yaml
-│   ├── npm.yaml
-│   ├── pypi.yaml
-│   └── stackexchange.yaml
-│
-├── /media/
-│   ├── itunes.yaml
-│   ├── tvmaze.yaml
-│   ├── musicbrainz.yaml
-│   └── podcast-index.yaml
-│
-├── /finance/
-│   ├── coingecko.yaml
-│   ├── exchangerate.yaml
-│   └── sec-edgar.yaml
-│
-├── /fun/
-│   ├── pokeapi.yaml
-│   ├── swapi.yaml
-│   ├── xkcd.yaml
-│   └── trivia.yaml
-│
-├── /geo/
-│   ├── rest-countries.yaml      # ✅ Complete
-│   └── geonames.yaml
-│
-├── /science/
-│   ├── nasa-apod.yaml
-│   ├── spacex.yaml
-│   └── usgs.yaml
-│
-└── /utilities/
-    ├── jsonplaceholder.yaml
-    ├── httpbin.yaml
-    └── qrcode.yaml
-```
-
----
-
-## Notes on "Keyless" vs "Free Tier"
+## Notes
 
 **Truly Keyless**: No signup, no API key, just call the endpoint
-- Wikipedia, Open-Meteo, REST Countries, Reddit JSON, Hacker News
+- Wikipedia, Open-Meteo, REST Countries, Reddit JSON, Hacker News, DuckDuckGo, SearXNG
 
 **Free Tier (Key Required)**: Free but requires registration
-- Google APIs, YouTube, TMDB, NewsAPI, Alpha Vantage
+- Google APIs, Bing, YouTube, TMDB, NewsAPI, Alpha Vantage
 
 Both are valuable - the key distinction is friction to get started.
 
