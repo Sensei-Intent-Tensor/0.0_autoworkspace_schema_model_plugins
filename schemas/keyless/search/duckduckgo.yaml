@@ -1,0 +1,323 @@
+openapi: "3.1.0"
+info:
+  title: DuckDuckGo Instant Answer API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for DuckDuckGo's Instant Answer API.
+    
+    ## Authentication
+    **None required** - Completely free and public
+    
+    ## What This API Provides
+    - Instant answers (calculations, definitions, facts)
+    - Wikipedia abstracts
+    - Related topics
+    - Official website links
+    - Disambiguation pages
+    
+    ## What This API Does NOT Provide
+    - Web search results (use DuckDuckGo HTML or other search APIs)
+    - Image search
+    - News search
+    
+    ## ChatGPT Compatible
+    Yes
+    
+    ## Rate Limits
+    No published limits, but be reasonable
+    
+    ## Response Types
+    - **A** (Abstract): Wikipedia-style summary
+    - **D** (Disambiguation): Multiple meanings
+    - **C** (Category): Topic category
+    - **N** (Name): Topic name
+    - **E** (Exclusive): Instant answer from specific source
+    
+    ## Attribution
+    Results may require attribution. Check `AbstractSource` field.
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+  externalDocs:
+    description: DuckDuckGo API Documentation
+    url: https://api.duckduckgo.com/api
+
+servers:
+  - url: https://api.duckduckgo.com
+    description: DuckDuckGo API
+
+components:
+  schemas:
+    InstantAnswer:
+      type: object
+      description: DuckDuckGo Instant Answer response
+      properties:
+        Abstract:
+          type: string
+          description: Wikipedia-style abstract/summary
+        AbstractText:
+          type: string
+          description: Plain text version of abstract
+        AbstractSource:
+          type: string
+          description: Source of abstract (e.g., "Wikipedia")
+        AbstractURL:
+          type: string
+          description: URL to full article
+        Image:
+          type: string
+          description: URL to relevant image
+        ImageWidth:
+          type: integer
+        ImageHeight:
+          type: integer
+        ImageIsLogo:
+          type: integer
+          description: 1 if image is a logo
+        Heading:
+          type: string
+          description: Title/heading for the result
+        Answer:
+          type: string
+          description: Instant answer (calculations, conversions, etc.)
+        AnswerType:
+          type: string
+          description: Type of instant answer
+        Definition:
+          type: string
+          description: Dictionary definition
+        DefinitionSource:
+          type: string
+        DefinitionURL:
+          type: string
+        RelatedTopics:
+          type: array
+          description: Related topics and searches
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/RelatedTopic'
+              - $ref: '#/components/schemas/RelatedTopicGroup'
+        Results:
+          type: array
+          description: Official/primary results
+          items:
+            $ref: '#/components/schemas/Result'
+        Type:
+          type: string
+          description: |
+            Response type:
+            - A: Article (abstract available)
+            - D: Disambiguation
+            - C: Category
+            - N: Name
+            - E: Exclusive (instant answer)
+            - (empty): Nothing found
+          enum: ["A", "D", "C", "N", "E", ""]
+        Redirect:
+          type: string
+          description: Redirect URL for !bang commands
+        Entity:
+          type: string
+          description: Entity type (person, place, etc.)
+        Infobox:
+          type: object
+          description: Structured infobox data
+          properties:
+            content:
+              type: array
+              items:
+                type: object
+                properties:
+                  data_type:
+                    type: string
+                  label:
+                    type: string
+                  value:
+                    type: string
+                  wiki_order:
+                    type: integer
+            meta:
+              type: array
+              items:
+                type: object
+
+    RelatedTopic:
+      type: object
+      properties:
+        Text:
+          type: string
+          description: Related topic text/snippet
+        FirstURL:
+          type: string
+          description: URL to related topic
+        Icon:
+          type: object
+          properties:
+            URL:
+              type: string
+            Width:
+              type: string
+            Height:
+              type: string
+        Result:
+          type: string
+          description: HTML formatted result
+
+    RelatedTopicGroup:
+      type: object
+      description: Group of related topics by category
+      properties:
+        Name:
+          type: string
+          description: Category name
+        Topics:
+          type: array
+          items:
+            $ref: '#/components/schemas/RelatedTopic'
+
+    Result:
+      type: object
+      description: Official/primary result
+      properties:
+        Text:
+          type: string
+        FirstURL:
+          type: string
+        Icon:
+          type: object
+          properties:
+            URL:
+              type: string
+            Width:
+              type: string
+            Height:
+              type: string
+        Result:
+          type: string
+          description: HTML formatted result
+
+paths:
+  /:
+    get:
+      operationId: instantAnswer
+      summary: Get instant answer
+      description: |
+        Returns instant answers, abstracts, and related topics for a query.
+        
+        ## Examples
+        - `?q=Albert Einstein` → Wikipedia abstract
+        - `?q=2+2` → Calculator answer
+        - `?q=python programming` → Abstract + related topics
+        - `?q=define serendipity` → Dictionary definition
+        - `?q=apple` → Disambiguation (fruit vs company)
+        
+        ## !Bang Commands
+        Queries starting with `!` redirect to other sites:
+        - `!g python` → Google search
+        - `!w Einstein` → Wikipedia
+        - `!so javascript` → Stack Overflow
+        
+        These return a `Redirect` URL instead of results.
+      tags:
+        - Search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+          examples:
+            person:
+              value: "Albert Einstein"
+              summary: Person lookup
+            calculation:
+              value: "2+2"
+              summary: Calculator
+            definition:
+              value: "define serendipity"
+              summary: Dictionary lookup
+            disambiguation:
+              value: "apple"
+              summary: Disambiguation
+            programming:
+              value: "python programming language"
+              summary: Programming topic
+        - name: format
+          in: query
+          required: true
+          description: Response format (always use json)
+          schema:
+            type: string
+            enum: [json, xml]
+            default: json
+        - name: no_html
+          in: query
+          description: Remove HTML from responses
+          schema:
+            type: integer
+            enum: [0, 1]
+            default: 0
+        - name: skip_disambig
+          in: query
+          description: Skip disambiguation results
+          schema:
+            type: integer
+            enum: [0, 1]
+            default: 0
+        - name: no_redirect
+          in: query
+          description: Don't follow redirects for !bangs
+          schema:
+            type: integer
+            enum: [0, 1]
+            default: 0
+        - name: t
+          in: query
+          description: Application name (for attribution)
+          schema:
+            type: string
+          example: "my_app"
+      responses:
+        '200':
+          description: Instant answer response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstantAnswer'
+              examples:
+                article:
+                  summary: Article response (person)
+                  value:
+                    Abstract: "Albert Einstein was a German-born theoretical physicist who developed the theory of relativity..."
+                    AbstractSource: "Wikipedia"
+                    AbstractURL: "https://en.wikipedia.org/wiki/Albert_Einstein"
+                    Heading: "Albert Einstein"
+                    Image: "https://duckduckgo.com/i/albert_einstein.jpg"
+                    Type: "A"
+                    Entity: "person"
+                    RelatedTopics:
+                      - Text: "Theory of relativity - The theory of relativity..."
+                        FirstURL: "https://duckduckgo.com/Theory_of_relativity"
+                disambiguation:
+                  summary: Disambiguation response
+                  value:
+                    Heading: "Apple"
+                    Type: "D"
+                    RelatedTopics:
+                      - Text: "Apple Inc. - American multinational technology company"
+                        FirstURL: "https://duckduckgo.com/Apple_Inc."
+                      - Text: "Apple - Fruit of the apple tree"
+                        FirstURL: "https://duckduckgo.com/Apple"
+                calculator:
+                  summary: Instant answer (calculation)
+                  value:
+                    Answer: "4"
+                    AnswerType: "calc"
+                    Type: "E"
+                    Heading: "2+2"
+                bang:
+                  summary: Bang redirect
+                  value:
+                    Redirect: "https://www.google.com/search?q=python"
+                    Type: ""
