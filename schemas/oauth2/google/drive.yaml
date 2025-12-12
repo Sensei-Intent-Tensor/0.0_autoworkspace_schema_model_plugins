@@ -1,0 +1,502 @@
+openapi: "3.1.0"
+info:
+  title: Google Drive API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for Google Drive API.
+    
+    ## Required Placeholders
+    - `{{CLIENT_ID}}`: Your Google OAuth client ID
+    - `{{CLIENT_SECRET}}`: Your Google OAuth client secret
+    - `{{CALLBACK_URL}}`: Your platform's OAuth callback URL
+    
+    ## Scopes
+    - `https://www.googleapis.com/auth/drive` - Full Drive access
+    - `https://www.googleapis.com/auth/drive.file` - Files created/opened by app only
+    - `https://www.googleapis.com/auth/drive.readonly` - Read-only access
+    - `https://www.googleapis.com/auth/drive.metadata.readonly` - Metadata only
+    
+    ## Auth Type
+    OAuth2 Authorization Code
+    
+    ## ChatGPT Compatible
+    Yes
+    
+    ## Note
+    Use `drive.file` scope when possible - it's less invasive and doesn't
+    require Google's restricted scope verification.
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+
+servers:
+  - url: https://www.googleapis.com/drive/v3
+    description: Google Drive API v3
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://accounts.google.com/o/oauth2/v2/auth
+          tokenUrl: https://oauth2.googleapis.com/token
+          scopes:
+            https://www.googleapis.com/auth/drive: Full access to Drive
+            https://www.googleapis.com/auth/drive.file: Access to files created by app
+            https://www.googleapis.com/auth/drive.readonly: Read-only access
+            https://www.googleapis.com/auth/drive.metadata.readonly: Read metadata only
+
+  schemas:
+    File:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique file identifier
+        name:
+          type: string
+          description: File name
+        mimeType:
+          type: string
+          description: MIME type of the file
+        description:
+          type: string
+        starred:
+          type: boolean
+        trashed:
+          type: boolean
+        parents:
+          type: array
+          items:
+            type: string
+          description: Parent folder IDs
+        webViewLink:
+          type: string
+          description: Link to view file in browser
+        webContentLink:
+          type: string
+          description: Direct download link
+        iconLink:
+          type: string
+        thumbnailLink:
+          type: string
+        createdTime:
+          type: string
+          format: date-time
+        modifiedTime:
+          type: string
+          format: date-time
+        size:
+          type: string
+          description: File size in bytes
+        owners:
+          type: array
+          items:
+            type: object
+            properties:
+              displayName:
+                type: string
+              emailAddress:
+                type: string
+        shared:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Permission'
+
+    FileList:
+      type: object
+      properties:
+        kind:
+          type: string
+        nextPageToken:
+          type: string
+        incompleteSearch:
+          type: boolean
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/File'
+
+    Permission:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [user, group, domain, anyone]
+        role:
+          type: string
+          enum: [owner, organizer, fileOrganizer, writer, commenter, reader]
+        emailAddress:
+          type: string
+        domain:
+          type: string
+
+    About:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            displayName:
+              type: string
+            emailAddress:
+              type: string
+        storageQuota:
+          type: object
+          properties:
+            limit:
+              type: string
+            usage:
+              type: string
+            usageInDrive:
+              type: string
+            usageInDriveTrash:
+              type: string
+
+security:
+  - OAuth2:
+      - https://www.googleapis.com/auth/drive.file
+
+paths:
+  /about:
+    get:
+      operationId: getDriveAbout
+      summary: Get Drive account info
+      description: Returns information about the user's Drive account
+      parameters:
+        - name: fields
+          in: query
+          description: Fields to return
+          schema:
+            type: string
+            default: "user,storageQuota"
+      responses:
+        '200':
+          description: Account information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/About'
+
+  /files:
+    get:
+      operationId: listDriveFiles
+      summary: List files
+      description: Lists files in the user's Drive
+      parameters:
+        - name: q
+          in: query
+          description: |
+            Search query. Examples:
+            - `name contains 'report'`
+            - `mimeType = 'application/pdf'`
+            - `'folder_id' in parents`
+            - `trashed = false`
+          schema:
+            type: string
+        - name: pageSize
+          in: query
+          description: Maximum files to return (1-1000)
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+        - name: pageToken
+          in: query
+          description: Pagination token
+          schema:
+            type: string
+        - name: orderBy
+          in: query
+          description: Sort order (e.g., "modifiedTime desc")
+          schema:
+            type: string
+        - name: fields
+          in: query
+          description: Fields to include in response
+          schema:
+            type: string
+            default: "files(id,name,mimeType,parents,webViewLink,modifiedTime)"
+        - name: spaces
+          in: query
+          description: Spaces to search
+          schema:
+            type: string
+            enum: [drive, appDataFolder]
+            default: drive
+      responses:
+        '200':
+          description: List of files
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileList'
+
+    post:
+      operationId: createDriveFile
+      summary: Create file metadata
+      description: |
+        Creates a new file metadata entry. For uploading content, 
+        use the upload endpoint.
+      parameters:
+        - name: uploadType
+          in: query
+          schema:
+            type: string
+            enum: [media, multipart, resumable]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: File name
+                mimeType:
+                  type: string
+                  description: |
+                    MIME type. For Google Docs types:
+                    - `application/vnd.google-apps.document` (Doc)
+                    - `application/vnd.google-apps.spreadsheet` (Sheet)
+                    - `application/vnd.google-apps.presentation` (Slides)
+                    - `application/vnd.google-apps.folder` (Folder)
+                parents:
+                  type: array
+                  items:
+                    type: string
+                  description: Parent folder IDs
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Created file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+
+  /files/{fileId}:
+    get:
+      operationId: getDriveFile
+      summary: Get file metadata
+      description: Returns metadata for a specific file
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fields
+          in: query
+          description: Fields to return
+          schema:
+            type: string
+            default: "*"
+      responses:
+        '200':
+          description: File metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+
+    patch:
+      operationId: updateDriveFile
+      summary: Update file metadata
+      description: Updates a file's metadata
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: addParents
+          in: query
+          description: Comma-separated parent IDs to add
+          schema:
+            type: string
+        - name: removeParents
+          in: query
+          description: Comma-separated parent IDs to remove
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                starred:
+                  type: boolean
+                trashed:
+                  type: boolean
+      responses:
+        '200':
+          description: Updated file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+
+    delete:
+      operationId: deleteDriveFile
+      summary: Delete a file
+      description: Permanently deletes a file (skips trash)
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: File deleted
+
+  /files/{fileId}/copy:
+    post:
+      operationId: copyDriveFile
+      summary: Copy a file
+      description: Creates a copy of a file
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name for the copy
+                parents:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Copied file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+
+  /files/{fileId}/permissions:
+    get:
+      operationId: listFilePermissions
+      summary: List file permissions
+      description: Lists all permissions for a file
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of permissions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permissions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Permission'
+
+    post:
+      operationId: createFilePermission
+      summary: Share a file
+      description: Creates a permission to share a file
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sendNotificationEmail
+          in: query
+          description: Send notification to recipient
+          schema:
+            type: boolean
+            default: true
+        - name: emailMessage
+          in: query
+          description: Custom message for notification
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+                - role
+              properties:
+                type:
+                  type: string
+                  enum: [user, group, domain, anyone]
+                role:
+                  type: string
+                  enum: [owner, organizer, fileOrganizer, writer, commenter, reader]
+                emailAddress:
+                  type: string
+                  description: Required for user/group type
+                domain:
+                  type: string
+                  description: Required for domain type
+      responses:
+        '200':
+          description: Created permission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Permission'
+
+  /files/{fileId}/export:
+    get:
+      operationId: exportDriveFile
+      summary: Export Google Doc
+      description: Exports a Google Doc to a different format
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: mimeType
+          in: query
+          required: true
+          description: |
+            Export format:
+            - `application/pdf`
+            - `text/plain`
+            - `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (docx)
+            - `text/csv` (for Sheets)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Exported file content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
