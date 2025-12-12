@@ -1,0 +1,426 @@
+openapi: "3.1.0"
+info:
+  title: Google Custom Search API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for Google Custom Search JSON API.
+    
+    ## Required Setup
+    1. Create a Custom Search Engine: https://cse.google.com/cse/
+    2. Get an API key: https://console.cloud.google.com/apis/credentials
+    3. Enable "Search the entire web" in your CSE settings
+    
+    ## Placeholders
+    - `{{GOOGLE_API_KEY}}`: Your Google Cloud API key
+    - `{{SEARCH_ENGINE_ID}}`: Your Custom Search Engine ID (cx parameter)
+    
+    ## Free Tier
+    - 100 queries/day FREE
+    - $5 per 1,000 queries after that
+    - 10,000 queries/day maximum
+    
+    ## ChatGPT Compatible
+    Yes
+    
+    ## Features
+    - Web search
+    - Image search
+    - Site-restricted search
+    - Date filtering
+    - Safe search
+    - Geolocation filtering
+    
+    ## Limitations
+    - Must create a Custom Search Engine first
+    - Free tier is limited to 100 queries/day
+    - Results may differ from google.com
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+  externalDocs:
+    description: Google Custom Search API Documentation
+    url: https://developers.google.com/custom-search/v1/overview
+
+servers:
+  - url: https://www.googleapis.com/customsearch
+    description: Google Custom Search API
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: query
+      name: key
+      description: Google Cloud API key
+
+  schemas:
+    SearchResponse:
+      type: object
+      properties:
+        kind:
+          type: string
+          example: "customsearch#search"
+        url:
+          type: object
+          properties:
+            type:
+              type: string
+            template:
+              type: string
+        queries:
+          type: object
+          properties:
+            request:
+              type: array
+              items:
+                $ref: '#/components/schemas/QueryInfo'
+            nextPage:
+              type: array
+              items:
+                $ref: '#/components/schemas/QueryInfo'
+            previousPage:
+              type: array
+              items:
+                $ref: '#/components/schemas/QueryInfo'
+        context:
+          type: object
+          properties:
+            title:
+              type: string
+        searchInformation:
+          type: object
+          properties:
+            searchTime:
+              type: number
+              description: Time taken in seconds
+            formattedSearchTime:
+              type: string
+            totalResults:
+              type: string
+            formattedTotalResults:
+              type: string
+        spelling:
+          type: object
+          properties:
+            correctedQuery:
+              type: string
+            htmlCorrectedQuery:
+              type: string
+        items:
+          type: array
+          description: Search results
+          items:
+            $ref: '#/components/schemas/SearchResult'
+
+    QueryInfo:
+      type: object
+      properties:
+        title:
+          type: string
+        totalResults:
+          type: string
+        searchTerms:
+          type: string
+        count:
+          type: integer
+        startIndex:
+          type: integer
+        inputEncoding:
+          type: string
+        outputEncoding:
+          type: string
+        safe:
+          type: string
+        cx:
+          type: string
+
+    SearchResult:
+      type: object
+      properties:
+        kind:
+          type: string
+          example: "customsearch#result"
+        title:
+          type: string
+          description: Page title
+        htmlTitle:
+          type: string
+          description: Title with HTML formatting
+        link:
+          type: string
+          description: Result URL
+        displayLink:
+          type: string
+          description: Display-friendly URL
+        snippet:
+          type: string
+          description: Text snippet
+        htmlSnippet:
+          type: string
+          description: Snippet with HTML formatting
+        formattedUrl:
+          type: string
+        htmlFormattedUrl:
+          type: string
+        cacheId:
+          type: string
+        pagemap:
+          type: object
+          description: Structured data from the page
+          properties:
+            cse_thumbnail:
+              type: array
+              items:
+                type: object
+                properties:
+                  src:
+                    type: string
+                  width:
+                    type: string
+                  height:
+                    type: string
+            metatags:
+              type: array
+              items:
+                type: object
+                additionalProperties:
+                  type: string
+            cse_image:
+              type: array
+              items:
+                type: object
+                properties:
+                  src:
+                    type: string
+        # Image search specific
+        image:
+          type: object
+          properties:
+            contextLink:
+              type: string
+            height:
+              type: integer
+            width:
+              type: integer
+            byteSize:
+              type: integer
+            thumbnailLink:
+              type: string
+            thumbnailHeight:
+              type: integer
+            thumbnailWidth:
+              type: integer
+        mime:
+          type: string
+          description: MIME type (for images)
+        fileFormat:
+          type: string
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /v1:
+    get:
+      operationId: search
+      summary: Web search
+      description: |
+        Performs a Google web search using your Custom Search Engine.
+        
+        ## Basic Usage
+        ```
+        GET /v1?key=API_KEY&cx=SEARCH_ENGINE_ID&q=query
+        ```
+        
+        ## Pagination
+        Use `start` parameter. Results return 10 at a time.
+        - Page 1: start=1 (default)
+        - Page 2: start=11
+        - Page 3: start=21
+        
+        Maximum: start=91 (100 results total)
+      tags:
+        - Search
+      parameters:
+        - name: key
+          in: query
+          required: true
+          description: Google API key
+          schema:
+            type: string
+        - name: cx
+          in: query
+          required: true
+          description: Custom Search Engine ID
+          schema:
+            type: string
+          example: "017576662512468239146:omuauf_gy2s"
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+          example: "machine learning tutorial"
+        - name: num
+          in: query
+          description: Number of results (1-10)
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 10
+        - name: start
+          in: query
+          description: Starting index for pagination (1-91)
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+            maximum: 91
+        - name: lr
+          in: query
+          description: Language restriction
+          schema:
+            type: string
+          example: "lang_en"
+        - name: safe
+          in: query
+          description: Safe search level
+          schema:
+            type: string
+            enum: [active, off]
+            default: off
+        - name: sort
+          in: query
+          description: Sort expression
+          schema:
+            type: string
+          example: "date"
+        - name: dateRestrict
+          in: query
+          description: Date restriction
+          schema:
+            type: string
+          examples:
+            day:
+              value: "d1"
+              summary: Past day
+            week:
+              value: "w1"
+              summary: Past week
+            month:
+              value: "m1"
+              summary: Past month
+            year:
+              value: "y1"
+              summary: Past year
+        - name: exactTerms
+          in: query
+          description: Phrase that must appear
+          schema:
+            type: string
+        - name: excludeTerms
+          in: query
+          description: Words to exclude
+          schema:
+            type: string
+        - name: siteSearch
+          in: query
+          description: Restrict to specific site
+          schema:
+            type: string
+          example: "stackoverflow.com"
+        - name: siteSearchFilter
+          in: query
+          description: Include or exclude siteSearch
+          schema:
+            type: string
+            enum: [e, i]
+          examples:
+            include:
+              value: "i"
+              summary: Include only this site
+            exclude:
+              value: "e"
+              summary: Exclude this site
+        - name: fileType
+          in: query
+          description: File type filter
+          schema:
+            type: string
+          example: "pdf"
+        - name: rights
+          in: query
+          description: License filter
+          schema:
+            type: string
+          examples:
+            reuse:
+              value: "cc_publicdomain,cc_attribute"
+              summary: Free to use
+        - name: gl
+          in: query
+          description: Geolocation (country code)
+          schema:
+            type: string
+          example: "us"
+        - name: hl
+          in: query
+          description: Interface language
+          schema:
+            type: string
+          example: "en"
+        - name: searchType
+          in: query
+          description: Search type
+          schema:
+            type: string
+            enum: [image]
+          example: "image"
+        # Image search parameters
+        - name: imgSize
+          in: query
+          description: Image size (when searchType=image)
+          schema:
+            type: string
+            enum: [huge, icon, large, medium, small, xlarge, xxlarge]
+        - name: imgType
+          in: query
+          description: Image type (when searchType=image)
+          schema:
+            type: string
+            enum: [clipart, face, lineart, stock, photo, animated]
+        - name: imgColorType
+          in: query
+          description: Image color type
+          schema:
+            type: string
+            enum: [color, gray, mono, trans]
+        - name: imgDominantColor
+          in: query
+          description: Dominant color filter
+          schema:
+            type: string
+            enum: [black, blue, brown, gray, green, orange, pink, purple, red, teal, white, yellow]
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+              example:
+                kind: "customsearch#search"
+                searchInformation:
+                  searchTime: 0.32
+                  totalResults: "1250000"
+                items:
+                  - title: "Machine Learning Tutorial - Python"
+                    link: "https://example.com/ml-tutorial"
+                    snippet: "Learn machine learning with Python..."
+                    displayLink: "example.com"
+        '400':
+          description: Bad request (invalid parameters)
+        '403':
+          description: Quota exceeded or invalid API key
