@@ -1,103 +1,109 @@
 # API Key Schemas
 
-Drop-in OpenAPI 3.1.0 schemas for APIs that use API Key authentication.
+Drop-in schemas for APIs requiring API key authentication.
 
 ## Available Schemas
 
 | Schema | API | Operations | Status |
 |--------|-----|------------|--------|
-| [openai.yaml](openai.yaml) | OpenAI | Chat, Embeddings, Images, Audio, Moderation | ✅ Complete |
-| anthropic.yaml | Anthropic Claude | Messages API | ⬜ Pending |
-| sendgrid.yaml | SendGrid | Email, Templates | ⬜ Pending |
-| stripe.yaml | Stripe | Payments, Customers | ⬜ Pending |
+| [anthropic.yaml](anthropic.yaml) | Claude Messages | Chat, Vision, Tools, Token Count | ✅ Complete |
 
-## Authentication Pattern
+## Coming Soon
 
-API Key schemas use Bearer token or custom header authentication:
+| Schema | API | Operations |
+|--------|-----|------------|
+| `openai.yaml` | OpenAI | GPT, DALL-E, Embeddings, Whisper |
+| `sendgrid.yaml` | SendGrid | Email sending, Templates |
+| `stripe.yaml` | Stripe | Payments, Customers, Invoices |
 
-```yaml
-# Bearer Token (OpenAI, Anthropic)
-Authorization: Bearer {{API_KEY}}
+---
 
-# Custom Header (SendGrid)
-Authorization: Bearer {{SENDGRID_API_KEY}}
+## Quick Start: Anthropic Claude
 
-# Custom Header (Stripe)
-Authorization: Bearer {{STRIPE_SECRET_KEY}}
-```
-
-## Quick Start
-
-### 1. Get Your API Key
-
-| Service | Where to Get Key |
-|---------|------------------|
-| OpenAI | https://platform.openai.com/api-keys |
-| Anthropic | https://console.anthropic.com/settings/keys |
-| SendGrid | https://app.sendgrid.com/settings/api_keys |
-| Stripe | https://dashboard.stripe.com/apikeys |
+### 1. Get API Key
+Visit https://console.anthropic.com/settings/keys
 
 ### 2. Replace Placeholder
-
 ```yaml
-# In the schema, replace:
-{{OPENAI_API_KEY}} → sk-proj-xxxxx...
+{{ANTHROPIC_API_KEY}} → sk-ant-api03-...
 ```
 
-### 3. Use with Your Engine
-
-**ChatGPT Actions:**
-```yaml
-# Authentication settings:
-Type: API Key
-Auth Type: Bearer
+### 3. Required Headers
+```http
+x-api-key: {{ANTHROPIC_API_KEY}}
+anthropic-version: 2023-06-01
+Content-Type: application/json
 ```
 
-**cURL:**
+### 4. Example Request
 ```bash
-curl https://api.openai.com/v1/chat/completions \
-  -H "Authorization: Bearer $OPENAI_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Hello!"}]}'
+curl https://api.anthropic.com/v1/messages \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "content-type: application/json" \
+  -d '{
+    "model": "claude-sonnet-4-20250514",
+    "max_tokens": 1024,
+    "messages": [
+      {"role": "user", "content": "Hello, Claude!"}
+    ]
+  }'
 ```
 
-**Python:**
-```python
-import requests
-
-headers = {
-    "Authorization": f"Bearer {api_key}",
-    "Content-Type": "application/json"
-}
-response = requests.post(url, headers=headers, json=payload)
-```
-
-## OpenAI Schema Details
-
-### Endpoints
-
-| Endpoint | Operation | Description |
-|----------|-----------|-------------|
-| `/chat/completions` | createChatCompletion | Generate chat responses |
-| `/embeddings` | createEmbedding | Generate vector embeddings |
-| `/images/generations` | createImage | Generate images (DALL·E) |
-| `/audio/speech` | createSpeech | Text to speech |
-| `/audio/transcriptions` | createTranscription | Speech to text (Whisper) |
-| `/models` | listModels | List available models |
-| `/moderations` | createModeration | Content moderation |
-
-### Models
+### 5. Available Models
 
 | Model | Use Case | Context |
 |-------|----------|---------|
-| `gpt-4o` | Flagship multimodal | 128K |
-| `gpt-4o-mini` | Fast & affordable | 128K |
-| `gpt-4-turbo` | Previous flagship | 128K |
-| `text-embedding-3-small` | Embeddings | - |
-| `text-embedding-3-large` | High-dim embeddings | - |
-| `dall-e-3` | Image generation | - |
-| `whisper-1` | Speech to text | - |
-| `tts-1` / `tts-1-hd` | Text to speech | - |
+| `claude-sonnet-4-20250514` | Balanced performance | 200K |
+| `claude-opus-4-20250514` | Most capable | 200K |
+| `claude-haiku-3-5-20241022` | Fast & affordable | 200K |
+
+---
+
+## Authentication Patterns
+
+### Header-based (Most Common)
+```yaml
+securitySchemes:
+  ApiKeyAuth:
+    type: apiKey
+    in: header
+    name: X-API-Key
+```
+
+### Bearer Token
+```yaml
+securitySchemes:
+  BearerAuth:
+    type: http
+    scheme: bearer
+```
+
+### Query Parameter
+```yaml
+securitySchemes:
+  ApiKeyAuth:
+    type: apiKey
+    in: query
+    name: api_key
+```
+
+## ChatGPT Actions Setup
+
+When using API Key schemas in ChatGPT Actions:
+
+1. Select **"API Key"** authentication type
+2. Choose **"Custom"** for header name
+3. Enter the header name (e.g., `x-api-key`)
+4. Paste your API key (stored securely by OpenAI)
+
+## Security Best Practices
+
+- Never commit API keys to version control
+- Use environment variables in local development
+- Rotate keys periodically
+- Set up usage alerts/limits where available
+- Use separate keys for dev/prod environments
 
 ---
 
