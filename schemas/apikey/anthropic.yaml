@@ -1,0 +1,559 @@
+openapi: "3.1.0"
+info:
+  title: Anthropic Claude API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for Anthropic's Claude Messages API.
+    
+    ## Required Placeholders
+    - `{{ANTHROPIC_API_KEY}}`: Your Anthropic API key
+    
+    ## Authentication
+    API Key via `x-api-key` header
+    
+    ## Models
+    - `claude-sonnet-4-20250514` - Latest Sonnet (balanced)
+    - `claude-opus-4-20250514` - Most capable
+    - `claude-haiku-3-5-20241022` - Fastest, most affordable
+    
+    ## ChatGPT Compatible
+    Yes - but note streaming is not supported in ChatGPT Actions
+    
+    ## Rate Limits
+    Varies by tier. See https://docs.anthropic.com/en/api/rate-limits
+    
+    ## Pricing
+    Per-token pricing varies by model. See https://www.anthropic.com/pricing
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+  externalDocs:
+    description: Anthropic API Documentation
+    url: https://docs.anthropic.com/en/api
+
+servers:
+  - url: https://api.anthropic.com/v1
+    description: Anthropic API v1
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Your Anthropic API key
+
+  schemas:
+    # ============ REQUEST SCHEMAS ============
+    MessagesRequest:
+      type: object
+      required:
+        - model
+        - max_tokens
+        - messages
+      properties:
+        model:
+          type: string
+          description: |
+            Model to use. Options:
+            - claude-sonnet-4-20250514 (recommended)
+            - claude-opus-4-20250514
+            - claude-haiku-3-5-20241022
+          example: "claude-sonnet-4-20250514"
+        max_tokens:
+          type: integer
+          description: Maximum tokens to generate (1-8192 typical)
+          minimum: 1
+          maximum: 8192
+          example: 1024
+        messages:
+          type: array
+          description: Conversation messages
+          items:
+            $ref: '#/components/schemas/Message'
+        system:
+          type: string
+          description: System prompt (instructions for Claude)
+          example: "You are a helpful assistant."
+        temperature:
+          type: number
+          description: Randomness (0.0-1.0). Lower = more focused.
+          minimum: 0
+          maximum: 1
+          default: 1
+          example: 0.7
+        top_p:
+          type: number
+          description: Nucleus sampling threshold
+          minimum: 0
+          maximum: 1
+        top_k:
+          type: integer
+          description: Only sample from top K tokens
+          minimum: 1
+        stop_sequences:
+          type: array
+          description: Custom stop sequences
+          items:
+            type: string
+          example: ["\n\nHuman:"]
+        stream:
+          type: boolean
+          description: Enable streaming (not supported in ChatGPT Actions)
+          default: false
+        metadata:
+          type: object
+          description: Request metadata
+          properties:
+            user_id:
+              type: string
+              description: Your end-user ID for abuse detection
+        tools:
+          type: array
+          description: Tools/functions Claude can use
+          items:
+            $ref: '#/components/schemas/Tool'
+        tool_choice:
+          oneOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum: [auto, any, tool]
+                name:
+                  type: string
+                  description: Required when type is "tool"
+          description: How Claude should use tools
+
+    Message:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+          description: Message role
+        content:
+          oneOf:
+            - type: string
+              description: Simple text content
+            - type: array
+              description: Multi-part content (text + images)
+              items:
+                $ref: '#/components/schemas/ContentBlock'
+
+    ContentBlock:
+      oneOf:
+        - $ref: '#/components/schemas/TextContent'
+        - $ref: '#/components/schemas/ImageContent'
+        - $ref: '#/components/schemas/ToolUseContent'
+        - $ref: '#/components/schemas/ToolResultContent'
+
+    TextContent:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum: [text]
+        text:
+          type: string
+
+    ImageContent:
+      type: object
+      required:
+        - type
+        - source
+      properties:
+        type:
+          type: string
+          enum: [image]
+        source:
+          type: object
+          required:
+            - type
+            - media_type
+            - data
+          properties:
+            type:
+              type: string
+              enum: [base64]
+            media_type:
+              type: string
+              enum: [image/jpeg, image/png, image/gif, image/webp]
+            data:
+              type: string
+              description: Base64-encoded image data
+
+    ToolUseContent:
+      type: object
+      required:
+        - type
+        - id
+        - name
+        - input
+      properties:
+        type:
+          type: string
+          enum: [tool_use]
+        id:
+          type: string
+          description: Unique tool use ID
+        name:
+          type: string
+          description: Tool name
+        input:
+          type: object
+          description: Tool input parameters
+
+    ToolResultContent:
+      type: object
+      required:
+        - type
+        - tool_use_id
+        - content
+      properties:
+        type:
+          type: string
+          enum: [tool_result]
+        tool_use_id:
+          type: string
+          description: ID from the tool_use block
+        content:
+          type: string
+          description: Tool execution result
+        is_error:
+          type: boolean
+          description: Whether the tool encountered an error
+
+    Tool:
+      type: object
+      required:
+        - name
+        - input_schema
+      properties:
+        name:
+          type: string
+          description: Tool name (a-z, A-Z, 0-9, underscores)
+          pattern: "^[a-zA-Z0-9_]+$"
+          example: "get_weather"
+        description:
+          type: string
+          description: What the tool does (helps Claude decide when to use it)
+          example: "Get the current weather for a location"
+        input_schema:
+          type: object
+          description: JSON Schema for tool parameters
+          properties:
+            type:
+              type: string
+              enum: [object]
+            properties:
+              type: object
+            required:
+              type: array
+              items:
+                type: string
+
+    # ============ RESPONSE SCHEMAS ============
+    MessagesResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique message ID
+          example: "msg_01XFDUDYJgAACzvnptvVoYEL"
+        type:
+          type: string
+          enum: [message]
+        role:
+          type: string
+          enum: [assistant]
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentBlock'
+        model:
+          type: string
+          description: Model that generated the response
+        stop_reason:
+          type: string
+          enum: [end_turn, max_tokens, stop_sequence, tool_use]
+          description: Why generation stopped
+        stop_sequence:
+          type: string
+          nullable: true
+          description: The stop sequence that triggered, if any
+        usage:
+          $ref: '#/components/schemas/Usage'
+
+    Usage:
+      type: object
+      properties:
+        input_tokens:
+          type: integer
+          description: Tokens in the input
+        output_tokens:
+          type: integer
+          description: Tokens generated
+
+    CountTokensRequest:
+      type: object
+      required:
+        - model
+        - messages
+      properties:
+        model:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        system:
+          type: string
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tool'
+
+    CountTokensResponse:
+      type: object
+      properties:
+        input_tokens:
+          type: integer
+          description: Number of tokens in the input
+
+    Error:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [error]
+        error:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [invalid_request_error, authentication_error, permission_error, not_found_error, rate_limit_error, api_error, overloaded_error]
+            message:
+              type: string
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /messages:
+    post:
+      operationId: createMessage
+      summary: Create a message
+      description: |
+        Send a message to Claude and get a response.
+        
+        This is the primary endpoint for interacting with Claude.
+      tags:
+        - Messages
+      parameters:
+        - name: anthropic-version
+          in: header
+          required: true
+          description: API version (use 2023-06-01)
+          schema:
+            type: string
+            default: "2023-06-01"
+        - name: anthropic-beta
+          in: header
+          required: false
+          description: Beta features (comma-separated)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessagesRequest'
+            examples:
+              simple:
+                summary: Simple message
+                value:
+                  model: "claude-sonnet-4-20250514"
+                  max_tokens: 1024
+                  messages:
+                    - role: "user"
+                      content: "Hello, Claude!"
+              withSystem:
+                summary: With system prompt
+                value:
+                  model: "claude-sonnet-4-20250514"
+                  max_tokens: 1024
+                  system: "You are a helpful coding assistant. Always provide code examples."
+                  messages:
+                    - role: "user"
+                      content: "How do I read a file in Python?"
+              multiTurn:
+                summary: Multi-turn conversation
+                value:
+                  model: "claude-sonnet-4-20250514"
+                  max_tokens: 1024
+                  messages:
+                    - role: "user"
+                      content: "What's the capital of France?"
+                    - role: "assistant"
+                      content: "The capital of France is Paris."
+                    - role: "user"
+                      content: "What's the population?"
+              withImage:
+                summary: With image (vision)
+                value:
+                  model: "claude-sonnet-4-20250514"
+                  max_tokens: 1024
+                  messages:
+                    - role: "user"
+                      content:
+                        - type: "image"
+                          source:
+                            type: "base64"
+                            media_type: "image/jpeg"
+                            data: "/9j/4AAQSkZJRg..."
+                        - type: "text"
+                          text: "What's in this image?"
+              withTools:
+                summary: With tool use
+                value:
+                  model: "claude-sonnet-4-20250514"
+                  max_tokens: 1024
+                  tools:
+                    - name: "get_weather"
+                      description: "Get current weather for a location"
+                      input_schema:
+                        type: "object"
+                        properties:
+                          location:
+                            type: "string"
+                            description: "City name"
+                          unit:
+                            type: "string"
+                            enum: ["celsius", "fahrenheit"]
+                        required: ["location"]
+                  messages:
+                    - role: "user"
+                      content: "What's the weather in Tokyo?"
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagesResponse'
+              examples:
+                simple:
+                  value:
+                    id: "msg_01XFDUDYJgAACzvnptvVoYEL"
+                    type: "message"
+                    role: "assistant"
+                    content:
+                      - type: "text"
+                        text: "Hello! How can I help you today?"
+                    model: "claude-sonnet-4-20250514"
+                    stop_reason: "end_turn"
+                    stop_sequence: null
+                    usage:
+                      input_tokens: 12
+                      output_tokens: 15
+                toolUse:
+                  summary: Tool use response
+                  value:
+                    id: "msg_01ABC123"
+                    type: "message"
+                    role: "assistant"
+                    content:
+                      - type: "tool_use"
+                        id: "toolu_01ABC123"
+                        name: "get_weather"
+                        input:
+                          location: "Tokyo"
+                          unit: "celsius"
+                    model: "claude-sonnet-4-20250514"
+                    stop_reason: "tool_use"
+                    usage:
+                      input_tokens: 100
+                      output_tokens: 50
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: API error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '529':
+          description: API overloaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /messages/count_tokens:
+    post:
+      operationId: countTokens
+      summary: Count tokens
+      description: |
+        Count tokens in a message without sending it.
+        Useful for estimating costs and staying within limits.
+      tags:
+        - Messages
+      parameters:
+        - name: anthropic-version
+          in: header
+          required: true
+          schema:
+            type: string
+            default: "2023-06-01"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CountTokensRequest'
+            examples:
+              simple:
+                value:
+                  model: "claude-sonnet-4-20250514"
+                  messages:
+                    - role: "user"
+                      content: "How many tokens is this message?"
+      responses:
+        '200':
+          description: Token count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CountTokensResponse'
+              example:
+                input_tokens: 14
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
