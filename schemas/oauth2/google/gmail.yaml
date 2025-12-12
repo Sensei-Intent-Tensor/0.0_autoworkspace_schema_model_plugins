@@ -1,0 +1,376 @@
+openapi: "3.1.0"
+info:
+  title: Gmail API
+  version: "1.0.0"
+  description: |
+    Drop-in schema for Gmail API.
+    
+    ## Required Placeholders
+    - `{{CLIENT_ID}}`: Your Google OAuth client ID
+    - `{{CLIENT_SECRET}}`: Your Google OAuth client secret
+    - `{{CALLBACK_URL}}`: Your platform's OAuth callback URL
+    
+    ## Scopes
+    - `https://www.googleapis.com/auth/gmail.readonly` - Read messages
+    - `https://www.googleapis.com/auth/gmail.send` - Send messages
+    - `https://www.googleapis.com/auth/gmail.modify` - Read/write access
+    - `https://mail.google.com/` - Full access (restricted)
+    
+    ## Auth Type
+    OAuth2 Authorization Code
+    
+    ## ChatGPT Compatible
+    Yes
+  contact:
+    name: Auto-Workspace-AI
+    url: https://auto-workspace-ai.com
+
+servers:
+  - url: https://gmail.googleapis.com/gmail/v1
+    description: Gmail API v1
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://accounts.google.com/o/oauth2/v2/auth
+          tokenUrl: https://oauth2.googleapis.com/token
+          scopes:
+            https://www.googleapis.com/auth/gmail.readonly: Read messages
+            https://www.googleapis.com/auth/gmail.send: Send messages
+            https://www.googleapis.com/auth/gmail.modify: Read and modify messages
+
+  schemas:
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+        threadId:
+          type: string
+        labelIds:
+          type: array
+          items:
+            type: string
+        snippet:
+          type: string
+        payload:
+          type: object
+          properties:
+            headers:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  value:
+                    type: string
+            body:
+              type: object
+              properties:
+                data:
+                  type: string
+                  description: Base64url encoded body
+            parts:
+              type: array
+              items:
+                type: object
+        sizeEstimate:
+          type: integer
+        internalDate:
+          type: string
+
+    MessageList:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              threadId:
+                type: string
+        nextPageToken:
+          type: string
+        resultSizeEstimate:
+          type: integer
+
+    Label:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [system, user]
+
+    Draft:
+      type: object
+      properties:
+        id:
+          type: string
+        message:
+          $ref: '#/components/schemas/Message'
+
+security:
+  - OAuth2:
+      - https://www.googleapis.com/auth/gmail.readonly
+
+paths:
+  /users/{userId}/messages:
+    get:
+      operationId: listGmailMessages
+      summary: List messages
+      description: Lists messages in the user's mailbox
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User's email or "me" for authenticated user
+          schema:
+            type: string
+            default: me
+        - name: q
+          in: query
+          description: Gmail search query (same as Gmail search box)
+          schema:
+            type: string
+        - name: maxResults
+          in: query
+          description: Maximum messages to return
+          schema:
+            type: integer
+            default: 10
+            maximum: 500
+        - name: pageToken
+          in: query
+          description: Pagination token
+          schema:
+            type: string
+        - name: labelIds
+          in: query
+          description: Filter by label IDs
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageList'
+
+  /users/{userId}/messages/{id}:
+    get:
+      operationId: getGmailMessage
+      summary: Get a message
+      description: Gets a specific message by ID
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            default: me
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: format
+          in: query
+          description: Format of the message
+          schema:
+            type: string
+            enum: [minimal, full, raw, metadata]
+            default: full
+      responses:
+        '200':
+          description: Message details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /users/{userId}/messages/send:
+    post:
+      operationId: sendGmailMessage
+      summary: Send a message
+      description: Sends an email message
+      security:
+        - OAuth2:
+            - https://www.googleapis.com/auth/gmail.send
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            default: me
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - raw
+              properties:
+                raw:
+                  type: string
+                  description: |
+                    RFC 2822 formatted email, base64url encoded.
+                    
+                    Example raw message before encoding:
+                    To: recipient@example.com
+                    Subject: Hello
+                    
+                    This is the message body.
+      responses:
+        '200':
+          description: Sent message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /users/{userId}/labels:
+    get:
+      operationId: listGmailLabels
+      summary: List labels
+      description: Lists all labels in the user's mailbox
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            default: me
+      responses:
+        '200':
+          description: List of labels
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  labels:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Label'
+
+  /users/{userId}/drafts:
+    get:
+      operationId: listGmailDrafts
+      summary: List drafts
+      description: Lists drafts in the user's mailbox
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            default: me
+        - name: maxResults
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: List of drafts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  drafts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Draft'
+
+    post:
+      operationId: createGmailDraft
+      summary: Create a draft
+      description: Creates a new draft message
+      security:
+        - OAuth2:
+            - https://www.googleapis.com/auth/gmail.modify
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            default: me
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: object
+                  properties:
+                    raw:
+                      type: string
+                      description: Base64url encoded RFC 2822 message
+      responses:
+        '200':
+          description: Created draft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Draft'
+
+  /users/{userId}/threads:
+    get:
+      operationId: listGmailThreads
+      summary: List threads
+      description: Lists email threads in the user's mailbox
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            default: me
+        - name: q
+          in: query
+          description: Gmail search query
+          schema:
+            type: string
+        - name: maxResults
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: List of threads
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  threads:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        snippet:
+                          type: string
+                        historyId:
+                          type: string
